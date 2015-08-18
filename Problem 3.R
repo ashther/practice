@@ -4,23 +4,28 @@
 # 
 # What is the largest prime factor of the number 600851475143 ?
 
-primeFactor <- function(n){
-    end <- ceiling(n / 2)
-    i <- 2
-    for (j in i:end) {
-        if (n %% j != 0) {
+prime.series <- function(n){
+    res <- rep(0, length(n))
+    for (i in 1:length(n)) {
+        if (ceiling(n[i]) - n[i] > 0) {
             next
-        } else if (j > i & all((j %% 2:ceiling(j / 2)) != 0)) {
-            i <- j
+        } else if (all(n[i] %% 2:ceiling(sqrt(n[i])) != 0) | n[i] == 2) {
+            res[i] <- 1
         }
     }
-    return(i)
+    return(res)
 }
 
-
-for (i in 1e8:2) {
-    if (all((i %% 2:ceiling(i / 2)) != 0)) {
-        break
+pffind <- function(n){
+    #border <- sqrt(n)
+    border <- 1e8
+    test <- (n %% (2:border) == 0) & (prime.series(n / (2:border)))
+    
+    for (i in 1:border) {
+        if (test[i] == TRUE) {
+            print(n / i)
+            break
+        }
     }
 }
-print(i)
+
