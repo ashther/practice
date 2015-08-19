@@ -1,0 +1,16 @@
+# 2520 is the smallest number that can be divided by each of the numbers 
+# from 1 to 10 without any remainder. 
+# 
+# What is the smallest positive number that is evenly divisible by all of 
+# the numbers from 1 to 20? 
+
+divNumFind <- function(n){
+    temp <- 11 * (1:n)
+    for (i in 12:20) {
+        print(i)
+        temp <- temp[temp %in% (i * (1:n))]
+    }
+    return(temp)
+}
+
+#232792560
