@@ -16,15 +16,9 @@ isPali <- function(n){
 temp <- 0
 for (i in 999:1) {
     for (j in 999:1) {
-        if (isPali(i * j)) {
-            print(i * j)
-            temp <- 1
-            break
+        if (isPali(i * j) & (i * j) > temp) {
+            temp <- i * j
         }
-    }
-    if (temp) {
-        break
     }
 }
 
-#90909
