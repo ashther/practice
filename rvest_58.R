@@ -6,12 +6,19 @@ df_all <- data.frame()
 start <- 1
 end <- 10
 
+# nodes为字符串向量，各元素为所需字段的标签特征（路径）
 urlParse <- function(url, nodes){
-    result <- url %>% 
-        read_html(encoding = 'utf-8') %>% 
-        html_nodes(nodes) %>% 
-        html_text() %>% 
-        iconv('utf-8', 'gbk', sub = '')
+  # 读入网页内容，暂时保存在page_content
+  page_content <- url %>% read_html(encoding = 'utf-8')
+  
+  # 对字符串向量nodes的每个元素应用函数，函数的定义如下所示，函数按照每个元素
+  # 指出的路径提取文本信息，最终所有路径文本以list形式保存在result中
+  result <- lapply(nodes, function(node){
+    page_content %>% 
+      html_nodes(node) %>% 
+      html_text() %>% 
+      iconv('utf-8', 'gbk', sub = '')
+  })
 }
 
 # s是将要被解析的字符串，包含了大量“\r\t\n”符号
