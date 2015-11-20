@@ -1,7 +1,6 @@
 library(magrittr)
 library(rvest)
 library(stringr)
-url_0 <- 'http://xa.58.com/qztech/pn'
 
 # nodes为字符串向量，各元素为所需字段的标签特征（路径）
 urlParse <- function(url, nodes){
@@ -42,7 +41,9 @@ detailParse <- function(s, con){
     return(result)
 }
 
-
+# url <- 'http://xa.58.com/qztech/pn'
+# nodes <- c('span.name', 'dd.w70', 'div.xobxcontent')
+# con <- c('期望月薪：', '期望职位：')
 mainfunc <- function(url, nodes, con, start_page = 1, end_page = 5){
     urls <- paste0(url, start_page:end_page)
     df_all <- data.frame()
