@@ -1,3 +1,4 @@
+# xpath = "//h3[contains(@class, 'para-title')]//following-sibling::div[1]"
 library(magrittr)
 library(rvest)
 library(stringr)
