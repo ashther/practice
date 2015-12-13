@@ -1,4 +1,11 @@
+# time-out problem solution:
+# for (url in urls) {
+#     result <- tryCatch({evalWithTimeout(crawl_function(url), timeout = 30)}, 
+#                            error = function(e){return(e)})
+# }
+
 # xpath = "//h3[contains(@class, 'para-title')]//following-sibling::div[1]"
+
 library(magrittr)
 library(rvest)
 library(stringr)
