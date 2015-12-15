@@ -8,6 +8,7 @@ urls <- paste('http://baike.baidu.com/item/',
 nodes <- c("//div[contains(@class, 'lemma-summary')]",
            "//h3[contains(@class, 'para-title')]//following-sibling::div[1]",
            "//h3[contains(@class, 'para-title')]")
+cons <- c('师资力量', '学校排名', '院系设置', '学校地址')
 
 # 处理单网页、多标签、多检索字
 # 返回为与检索字相关的字符串向量
