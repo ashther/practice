@@ -42,12 +42,16 @@ main <- function(urls, nodes, cons, time_limit){
     pb <- txtProgressBar(max = length(urls), style = 3)
     
     for (url in urls) {
-        result[url, ] <- tryCatch({
-            evalWithTimeout(urlParse(url, nodes, cons), timeout = time_limit)
-        }, error = function(e)return(e))
+        tryCatch({
+            evalWithTimeout(try(result[url, ] <- urlParse(url, nodes, cons), 
+                                silent = TRUE), timeout = time_limit)
+        }, error = function(e){
+            result[url, ] <- e
+        })
         
         setTxtProgressBar(pb, which(urls == url))
         gc()
+        closeAllConnections()
     }
     
     close(pb)
