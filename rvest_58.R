@@ -1,3 +1,26 @@
+# string select problem solution:
+# cons <- c('地点：', '公司性质：', '公司规模：', '经验：', '学历：', '职位月薪：')
+# cons_len <- sapply(cons, nchar)
+# 
+# 
+# result <- vector()
+# for (i in 1:length(contents)) {
+#     start_p <- sapply(cons, function(c){
+#         gregexpr(c, contents[i], fixed = TRUE) %>% unlist
+#         })
+#     
+#     ifelse(sum(start_p == -1) > 0,
+#           temp <- start_p[-which(start_p == -1)],
+#           temp <- start_p)
+#     
+#     end_p <- c(temp[2:length(temp)], 10000)
+#     
+#     res <- substring(contents[i], (temp + cons_len[names(temp)]), (end_p - 1))
+#     names(res) <- names(temp)
+#     res <- res[cons]
+#     result <- rbind(result, res)
+# }
+
 # time-out problem solution:
 # for (url in urls) {
 #     result <- tryCatch({evalWithTimeout(crawl_function(url), timeout = 30)}, 
