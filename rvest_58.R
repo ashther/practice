@@ -13,6 +13,8 @@
 #           temp <- start_p[-which(start_p == -1)],
 #           temp <- start_p)
 #     
+#     temp <- sort(temp)     
+#
 #     end_p <- c(temp[2:length(temp)], 10000)
 #     
 #     res <- substring(contents[i], (temp + cons_len[names(temp)]), (end_p - 1))
