@@ -12,13 +12,24 @@ using namespace Rcpp;
 //
 
 // [[Rcpp::export]]
-double meanc(NumericVector x) {
+double meanC(NumericVector x) {
     double res = 0;
     int n = x.size();
     for (int i = 0; i < n; i++) {
         res += x[i];
     }
     return res / n;
+}
+
+// [[Rcpp::export]]
+bool allC(LogicalVector x) {
+    int n = x.size();
+    for(int i = 0; i < n; i++) {
+        if (!x[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 
@@ -28,6 +39,9 @@ double meanc(NumericVector x) {
 //
 
 /*** R
-x <- runif(1e3)
-microbenchmark(meanc(x), mean(x))
+require(microbenchmark)
+x_mean <- runif(1e3)
+microbenchmark(meanC(x_mean), mean(x_mean))
+x_all <- 1:10
+allC(x_all < 15)
 */
