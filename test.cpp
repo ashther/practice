@@ -89,6 +89,20 @@ NumericVector cummaxC(NumericVector x) {
     return result;
 }
 
+// [[Rcpp::export]]
+NumericVector diffC(NumericVector x, int lag) {
+    int n = x.size();
+    if (lag >= n) {
+        return false;
+    }
+    int m = n - lag;
+    NumericVector result(m);
+    for (int i = 0; i < m; i++) {
+        result[i] = x[i + lag] - x[i];
+    }
+    return result;
+}
+
 // You can include R code blocks in C++ files processed with sourceCpp
 // (useful for testing and development). The R code will be automatically 
 // run after the compilation.
@@ -96,23 +110,27 @@ NumericVector cummaxC(NumericVector x) {
 
 /*** R
 require(microbenchmark)
-x_mean <- runif(1e3)
-microbenchmark(meanC(x_mean), mean(x_mean))
+# x_mean <- runif(1e3)
+# microbenchmark(meanC(x_mean), mean(x_mean))
+# 
+# x_all <- 1:10
+# microbenchmark(all(x_all < 15), allC(x_all < 15))
+# 
+# x_cumsum <- 1:10
+# microbenchmark(cumsum(x_cumsum), cumsumC(x_cumsum))
+# 
+# x_cumprod <- 1:10
+# microbenchmark(cumprod(x_cumprod), cumprodC(x_cumprod))
+# 
+# x_cummin <- c(3:1, 2:0, 4:2)
+# microbenchmark(cummin(x_cummin), cumminC(x_cummin))
+# 
+# x_cummax <- c(3:1, 2:0, 4:2)
+# microbenchmark(cummax(x_cummax), cummaxC(x_cummax))
 
-x_all <- 1:10
-microbenchmark(all(x_all < 15), allC(x_all < 15))
-
-x_cumsum <- 1:10
-microbenchmark(cumsum(x_cumsum), cumsumC(x_cumsum))
-
-x_cumprod <- 1:10
-microbenchmark(cumprod(x_cumprod), cumprodC(x_cumprod))
-
-x_cummin <- c(3:1, 2:0, 4:2)
-microbenchmark(cummin(x_cummin), cumminC(x_cummin))
-
-x_cummax <- c(3:1, 2:0, 4:2)
-microbenchmark(cummax(x_cummax), cummaxC(x_cummax))
+x_diff <- runif(10)
+diff(x_diff, lag = 10)
+diffC(x_diff, lag = 10)
 */
 
 
