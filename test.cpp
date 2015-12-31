@@ -1,10 +1,11 @@
 //[[Rcpp::plugins(cpp11)]]
 #include <Rcpp.h>
 #include <numeric>
+#include <iostream>
 #include <algorithm>
 #include <unordered_set>
 using namespace Rcpp;
-
+using namespace std;
 
 // This is a simple example of exporting a C++ function to R. You can
 // source this function into an R session using the Rcpp::sourceCpp 
@@ -187,12 +188,12 @@ double medianC(NumericVector x) {
     }
 }
 
-//[[Rcpp:export]]
-LogicalVector test_in(NumericVector x, NumericVector y) {
+//[[Rcpp::export]]
+LogicalVector valueMatchC(NumericVector x, NumericVector y) {
     std::unordered_set<double> temp;
-    LogicalVector result(x.size());
+    LogicalVector result;
     NumericVector::iterator it;
-    int pos = 0;
+    int pos;
     for (it = y.begin(); it != y.end(); ++it) {
         temp.insert(*it);
     }
@@ -207,13 +208,45 @@ LogicalVector test_in(NumericVector x, NumericVector y) {
     return result;
 }
 
+//[[Rcpp::export]]
+unordered_set<double> uniqueC(NumericVector x) {
+    std::unordered_set<double> out;
+    NumericVector::iterator it;
+    for (it = x.begin(); it != x.end(); ++it) {
+        out.insert(*it);
+    }
+    return out;
+}
+
+//[[Rcpp::export]]
+List minmaxC(NumericVector x) {
+    double min_x = x[0], max_x = x[0];
+    NumericVector::iterator it;
+    for (it = x.begin(); it != x.end(); ++it) {
+        min_x = std::min(min_x, *it);
+        max_x = std::max(max_x, *it);
+    }
+    return List::create(_["min"] = min_x, _["max"] = max_x);
+}
+
+//[[Rcpp::export]]
+double whichminC(NumericVector x) {
+    double temp = *std::min_element(x.begin(), x.end());
+    for (int i = 0; i < x.size(); ++i) {
+        if (x[i] == temp) {
+            return i;
+        }
+    }
+    return 0;
+}
+
 // You can include R code blocks in C++ files processed with sourceCpp
 // (useful for testing and development). The R code will be automatically 
 // run after the compilation.
 //
 
 /*** R
-
+whichminC(c(6:1, 2:3))
 */
 
 
