@@ -240,6 +240,21 @@ double whichminC(NumericVector x) {
     return 0;
 }
 
+// [[Rcpp::export]]
+NumericMatrix cppgibbs(int N, int thin) {
+    NumericMatrix mat(N, 2);
+    double x = 0, y = 0;
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < thin; ++j) {
+            x = ::Rf_rgamma(3.0, 1.0 / (y * y + 4));
+            y = ::Rf_rnorm(1.0 / (x + 1), 1.0 / sqrt(2 * (x + 1)));
+        }
+        mat(i, 0) = x;
+        mat(i, 1) = y;
+    }
+    return mat;
+}
+
 // You can include R code blocks in C++ files processed with sourceCpp
 // (useful for testing and development). The R code will be automatically 
 // run after the compilation.
