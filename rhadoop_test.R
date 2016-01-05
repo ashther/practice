@@ -25,3 +25,16 @@ wp.reducer1 <- function(k, v){
 mapreduce(input = webpages.hdfs, map = wp.mapper1, reduce = wp.reducer1)
 result <- from.dfs('/tmp/file19f71ab2f8ee')
 
+#====================
+wc.map <- function(k, v) {
+  keyval(unlist(strsplit(v, ' ')), 1)
+}
+
+wc.reduce <- function(word, counts) {
+  keyval(word, sum(counts))
+}
+
+test_input <- to.dfs('this is a test, test rhadoop wordcount script, rhadoop is greate')
+mapreduce(input = test_input, map = wc.map, reduce = wc.reduce, combine = TRUE)
+
+
