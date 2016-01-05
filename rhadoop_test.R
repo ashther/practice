@@ -7,23 +7,53 @@ small.ints <- to.dfs(1:10)
 mapreduce(input = small.ints, map = function(k, v)cbind(k, v))
 from.dfs('/tmp/file19f73df21734') #ajust
 #===================
-webpages <- read.csv('webpages_mapreduce.csv', stringsAsFactors = FALSE)
-totalvisits <- sum(webpages$visits)
+webpages <- read.csv('webpages.csv', stringsAsFactors = FALSE)
 
-webpages.hdfs <- to.dfs(webpages)
-wp.mapper1 <- function(k, v){
-  key <- v[1]
+webpage.dfs <- to.dfs(webpages)
+total_visit <- sum(webpages$visits)
+key <- NA
+val <- NULL
+
+mapper_1 <- function(k, v) {
+  key <- v[2]
   val <- v[3]
   keyval(key, val)
 }
 
-wp.reducer1 <- function(k, v){
-  per <- sum(v) / totalvisits * 100
-  keyval(k, per)
+reducer_1 <- function(k, v) {
+  per <- sum(v) / total_visit * 100
+  if (per > 67) {
+    val <- 'high'
+  } else if(per > 33 & per <= 67) {
+    val <- 'median'
+  } else {
+    val <- 'low'
+  }
+  keyval(k, val)
 }
 
-mapreduce(input = webpages.hdfs, map = wp.mapper1, reduce = wp.reducer1)
-result <- from.dfs('/tmp/file19f71ab2f8ee')
+mapper_2 <- function(k, v) {
+  keyval(v, k)
+}
+
+reducer_2 <- function(k, v) {
+  if (is.na(key)) {
+    key <- k
+    val <- v
+  } else {
+    if (key == k) {
+      val <- c(val, v)
+    } else {
+      key <- k
+      val <- v
+    }
+  }
+  keyval(key, list(val))
+}
+
+mapreduce(webpage.dfs, map = mapper_1, reduce = reducer_1) %>%
+  mapreduce(map = mapper_2, reduce = reducer_2, combine = TRUE) %>%
+  from.dfs()
 
 #====================
 wc.map <- function(k, v) {
