@@ -1,0 +1,55 @@
+---
+output: word_document
+---
+
+### `r Sys.Date()`报告
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(knitr)
+library(pander)
+library(ggplot2)
+source('dataSource.R')
+```
+
+*****
+**表1. thinkcoo主要指标情况(`r Sys.Date()`)**
+```{r kable, echo = FALSE}
+pander(data.frame('累计用户数' = total_users[7, 2], '日活用户数' = dau[7, 2], '日新增用户数' = dnu[7, 2], '日人均启动次数' = avg_starts[7, 2]), style = 'rmarkdown')
+```
+
+```{r total_users, fig.height=3, fig.width=6}
+ggplot(total_users, aes(date, n, group = 1)) + geom_line(size = 1.5) + 
+    ylab('total users number') + 
+    theme(axis.text.x = element_text(size = 10, angle = 45), 
+          axis.title.y = element_text(size = 10), 
+          axis.title.x = element_text(size = 10))
+```
+**图1. 累计用户数变化趋势**
+
+
+```{r dau, fig.height=3, fig.width=6}
+ggplot(dau, aes(date, n, group = 1)) + geom_line(size = 1.5) + 
+    ylab('daily active users number') + 
+    theme(axis.text.x = element_text(size = 10, angle = 45), 
+          axis.title.y = element_text(size = 10), 
+          axis.title.x = element_text(size = 10))
+```
+**图2. 日活用户数变化趋势**
+
+```{r dnu, fig.height=3, fig.width=6}
+ggplot(dnu, aes(date, n, group = 1)) + geom_line(size = 1.5) + 
+    ylab('daily new users number') + 
+    theme(axis.text.x = element_text(size = 10, angle = 45), 
+          axis.title.y = element_text(size = 10), 
+          axis.title.x = element_text(size = 10))
+```
+**图3. 日新增用户数变化趋势**
+
+```{r avg_start, fig.height=3, fig.width=6}
+ggplot(avg_starts, aes(date, n, group = 1)) + geom_line(size = 1.5) + 
+    ylab('daily avgerate start times number') + 
+    theme(axis.text.x = element_text(size = 10, angle = 45), 
+          axis.title.y = element_text(size = 10), 
+          axis.title.x = element_text(size = 10))
+```
+**图4. 日人均启动次数变化趋势**
