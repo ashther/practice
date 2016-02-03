@@ -1,5 +1,5 @@
 ---
-output: word_document
+output: html_document
 ---
 
 ### `r Sys.Date()`报告
@@ -8,7 +8,16 @@ knitr::opts_chunk$set(echo = FALSE)
 library(knitr)
 library(pander)
 library(ggplot2)
-source('dataSource.R')
+source('E:/Git/auto_report/dataSource.R')
+
+if (!exists('daily_data')) {
+    daily_data <- dailyDataGet('10.21.4.43', 3306, 'user_select', 'user_select', 'yz_sys_db', Sys.Date(), 7)
+}
+
+total_users <- daily_data$total_users
+dau <- daily_data$dau
+dnu <- daily_data$dnu
+avg_starts <- daily_data$avg_starts
 ```
 
 *****

@@ -1,55 +1,242 @@
 ---
+title: 'thinkcoo周报'
+date: "2016年2月3日"
 output: word_document
 ---
 
-### `r Sys.Date()`报告
+### 第`r as.numeric(format(Sys.Date(), '%V')) - 1`周报告(`r Sys.Date() - 7` -- `r Sys.Date() - 1`)
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, fig.height = 3, fig.width = 6)
 library(knitr)
 library(pander)
 library(ggplot2)
-source('dataSource.R')
+source('E:/Git/auto_report/dataSource.R')
+
+if (!exists('weekly_data')) {
+    weekly_data <- weeklyDataGet('10.21.4.43', 3306, 'user_select', 'user_select', 'yz_sys_db', as.Date('2016-01-25'), weeks = 8, days = 7)
+}
 ```
+*****
+
+## 简述
+
+* 概况：主要介绍整个 ThinkCoo平台的运营状况和指标，并作综述性的分析和归纳。面向人群：公司高管
+* 运营分析：重点描述运营过程中一些关键性的指标，并对现状进行描述比较、发展的趋势分析、及必要的建议分析。面向人群：公司中层及运营部门
+* 产品分析：重点描述产品使用体验过程中，模块间的流量导向为基础的分析。面向人群：公司开发及产品部门
 
 *****
-**表1. thinkcoo主要指标情况(`r Sys.Date()`)**
-```{r kable, echo = FALSE}
-pander(data.frame('累计用户数' = total_users[7, 2], '日活用户数' = dau[7, 2], '日新增用户数' = dnu[7, 2], '日人均启动次数' = avg_starts[7, 2]), style = 'rmarkdown')
+
+```{r user_data, include=FALSE}
+total_users <- weekly_data$weekly_user_data$total_users
+wau <- weekly_data$weekly_user_data$wau
+wnu <- weekly_data$weekly_user_data$wnu
+avg_starts <- weekly_data$weekly_user_data$avg_starts
+retention_7_days <- weekly_data$weekly_user_data$retention_7_days
+retention_1_day <- weekly_data$weekly_user_data$retention_1_day
+user_data_table_1 <- total_users %>% 
+    left_join(wau, by = 'week') %>% 
+    left_join(wnu, by = 'week') %>% 
+    left_join(avg_starts, by = 'week')
+colnames(user_data_table_1) <- c('年度周期', '累计用户数', '活跃用户数', '新增用户数', '平均启动次数')
 ```
 
-```{r total_users, fig.height=3, fig.width=6}
-ggplot(total_users, aes(date, n, group = 1)) + geom_line(size = 1.5) + 
-    ylab('total users number') + 
-    theme(axis.text.x = element_text(size = 10, angle = 45), 
+## 概况
+
+**表1. thinkcoo平台周况**
+```{r user_data_table}
+pander(user_data_table_1, style = 'rmarkdown')
+# htmlTable(user_data_table_1, rnames = FALSE, col.rgroup = c("none", "#F7F7F7")
+```
+
+####启动时长待添加
+
+```{r total_users_fig}
+ggplot(total_users, aes(x = 1:8, y = n, group = 1)) + geom_line(size = 1.5) + 
+    ylab('total users number') + xlab('week') + 
+    theme(axis.text.x = element_text(size = 10), 
           axis.title.y = element_text(size = 10), 
-          axis.title.x = element_text(size = 10))
+          axis.title.x = element_text(size = 10)) + 
+    scale_x_discrete(labels = total_users$week)
 ```
-**图1. 累计用户数变化趋势**
+**图1. 近两个月累计用户数变化趋势**
 
 
-```{r dau, fig.height=3, fig.width=6}
-ggplot(dau, aes(date, n, group = 1)) + geom_line(size = 1.5) + 
-    ylab('daily active users number') + 
-    theme(axis.text.x = element_text(size = 10, angle = 45), 
+```{r wau_fig}
+ggplot(wau, aes(x = 1:8, y = n, group = 1)) + geom_line(size = 1.5) + 
+    ylab('weekly active user') + xlab('week') + 
+    theme(axis.text.x = element_text(size = 10), 
           axis.title.y = element_text(size = 10), 
-          axis.title.x = element_text(size = 10))
+          axis.title.x = element_text(size = 10)) + 
+    scale_x_discrete(labels = wau$week)
 ```
-**图2. 日活用户数变化趋势**
+**图1. 近两个月每周活跃用户数变化趋势**
 
-```{r dnu, fig.height=3, fig.width=6}
-ggplot(dnu, aes(date, n, group = 1)) + geom_line(size = 1.5) + 
-    ylab('daily new users number') + 
-    theme(axis.text.x = element_text(size = 10, angle = 45), 
+```{r wnu_fig}
+ggplot(wnu, aes(x = 1:8, y = n, group = 1)) + geom_line(size = 1.5) + 
+    ylab('weekly new user') + xlab('week') + 
+    theme(axis.text.x = element_text(size = 10), 
           axis.title.y = element_text(size = 10), 
-          axis.title.x = element_text(size = 10))
+          axis.title.x = element_text(size = 10)) + 
+    scale_x_discrete(labels = wnu$week)
 ```
-**图3. 日新增用户数变化趋势**
+**图1. 近两个月每周新增用户数变化趋势**
 
-```{r avg_start, fig.height=3, fig.width=6}
-ggplot(avg_starts, aes(date, n, group = 1)) + geom_line(size = 1.5) + 
-    ylab('daily avgerate start times number') + 
-    theme(axis.text.x = element_text(size = 10, angle = 45), 
+```{r avg_starts_fig}
+ggplot(avg_starts, aes(x = 1:8, y = n, group = 1)) + geom_line(size = 1.5) + 
+    ylab('weekly average starts') + xlab('week') + 
+    theme(axis.text.x = element_text(size = 10), 
           axis.title.y = element_text(size = 10), 
-          axis.title.x = element_text(size = 10))
+          axis.title.x = element_text(size = 10)) + 
+    scale_x_discrete(labels = avg_starts$week)
 ```
-**图4. 日人均启动次数变化趋势**
+**图1. 近两个月每周平均启动次数变化趋势**
+
+####启动时长待添加
+*****
+
+## 运营分析
+
+### 用户分析
+
+#### 新增用户
+
+```{r new_active_user_ratio, include=FALSE}
+new_active_user_ratio <- wnu
+new_active_user_ratio$n <- round(wnu$n / wau$n * 100, 2)
+```
+
+**表2. thinkcoo新增用户占活跃用户比例**
+```{r new_active_user_ratio_table}
+pander(data.frame('年度周期' = new_active_user_ratio$week, '新增用户占活跃用户比例(%)' = new_active_user_ratio$n), style = 'rmarkdown')
+```
+
+```{r new_active_user_ratio_fig}
+ggplot(new_active_user_ratio, aes(x = 1:8, y = n, group = 1)) + geom_line(size = 1.5) + ylab('ratio') + xlab('week') + 
+    theme(axis.text.x = element_text(size = 10), 
+          axis.title.y = element_text(size = 10), 
+          axis.title.x = element_text(size = 10)) + 
+    scale_x_discrete(labels = new_active_user_ratio$week)
+```
+**图1. 近两个月每周新增用户占活跃用户比例变化趋势**
+
+#### 活跃用户
+
+```{r active_total_user_ratio, include=FALSE}
+active_total_user_ratio <- wau
+active_total_user_ratio$n <- round(wau$n / total_users$n * 100, 2)
+```
+
+**表2. thinkcoo活跃用户占累计用户比例**
+```{r active_total_user_ratio_table}
+pander(data.frame('年度周期' = active_total_user_ratio$week, '活跃用户占累计用户比例(%)' = active_total_user_ratio$n), style = 'rmarkdown')
+```
+
+```{r active_total_user_ratio_fig}
+ggplot(active_total_user_ratio, aes(x = 1:8, y = n, group = 1)) + geom_line(size = 1.5) + ylab('ratio') + xlab('week') + 
+    theme(axis.text.x = element_text(size = 10), 
+          axis.title.y = element_text(size = 10), 
+          axis.title.x = element_text(size = 10)) + 
+    scale_x_discrete(labels = active_total_user_ratio$week)
+```
+**图1. 近两个月每周活跃用户占累计用户比例变化趋势**
+
+#### 留存分析
+
+**表2. thinkcoo近两个月7日留存率**
+```{r retention_7_table}
+pander(data.frame('年度周期' = retention_7_days$week, '7日留存率(%)' = retention_7_days$n * 100), style = 'rmarkdown')
+```
+
+```{r retention_7_fig}
+ggplot(retention_7_days, aes(x = 1:7, y = n, group = 1)) + geom_line(size = 1.5) + ylab('7 days retention ratio') + xlab('week') + 
+    theme(axis.text.x = element_text(size = 10), 
+          axis.title.y = element_text(size = 10), 
+          axis.title.x = element_text(size = 10)) + 
+    scale_x_discrete(labels = retention_7_days$week)
+```
+**图1. 近两个月每周7日留存率变化趋势**
+
+**表2. thinkcoo近一周次日留存率**
+```{r retention_1_table}
+pander(data.frame('年度周期' = retention_1_day$date, '次日留存率(%)' = retention_1_day$n * 100), style = 'rmarkdown')
+```
+
+```{r retention_1_fig}
+ggplot(retention_1_day, aes(x = 1:6, y = n, group = 1)) + geom_line(size = 1.5) + ylab('7 days retention ratio') + xlab('date') + 
+    theme(axis.text.x = element_text(size = 10), 
+          axis.title.y = element_text(size = 10), 
+          axis.title.x = element_text(size = 10)) + 
+    scale_x_discrete(labels = retention_1_day$date)
+```
+**图1. 近一周每日次日留存率变化趋势**
+
+### 多维分析
+```{r cross_data, include=FALSE}
+sex <- weekly_data$weekly_cross_data$sex
+age <- weekly_data$weekly_cross_data$age
+post_level <- weekly_data$weekly_cross_data$post_level
+edu <- weekly_data$weekly_cross_data$edu
+
+u_wnu <- weekly_data$weekly_cross_data$u_wnu
+u_wau <- weekly_data$weekly_cross_data$u_wau
+u_starts <- weekly_data$weekly_cross_data$u_starts
+university_table <- left_join(u_wnu, u_wau, by = 'u')
+u_wnu_ratio <- round(university_table$n.x / sum(university_table$n.x) * 100, 2)
+u_wau_ratio <- round(university_table$n.y / sum(university_table$n.y) * 100, 2)
+
+area_wnu <- weekly_data$weekly_cross_data$area_wnu
+area_wau <- weekly_data$weekly_cross_data$area_wau
+area_starts <- weekly_data$weekly_cross_data$area_starts
+
+hour_starts <- weekly_data$weekly_cross_data$hour_starts
+```
+
+#### 性别、年龄、年级、学历
+
+```{r sex_fig}
+# need to change the fill parameters
+ggplot(sex, aes(x = '', y = n, fill = c('NA', 'female', 'male'))) + geom_bar(stat = 'identity', width = 1) + coord_polar(theta = 'y') + scale_fill_brewer(palette = 'Blues') + theme_minimal()
+```
+**图1. 全体用户性别占比**
+
+```{r age_fig}
+# need to change the fill parameters
+ggplot(age, aes(x = '', y = n, fill = decade)) + geom_bar(stat = 'identity', width = 1) + coord_polar(theta = 'y') + scale_fill_brewer(palette = 'Blues') + theme_minimal()
+```
+**图1. 全体用户年龄占比**
+
+```{r post_level_fig}
+# need to change the fill parameters
+ggplot(post_level, aes(x = '', y = n, fill = as.character(1:10))) + geom_bar(stat = 'identity', width = 1) + coord_polar(theta = 'y') + scale_fill_brewer(palette = 'Blues') + theme_minimal()
+```
+**图1. 学生用户各年级占比**
+
+```{r edu_fig}
+# need to change the fill parameters
+ggplot(edu, aes(x = '', y = n, fill = as.character(1:12))) + geom_bar(stat = 'identity', width = 1) + coord_polar(theta = 'y') + scale_fill_brewer(palette = 'Blues') + theme_minimal()
+```
+**图1. 非学生用户学历占比**
+
+#### 地区分析
+
+**表2. thinkcoo近一周新增用户top10高校**
+```{r university_table}
+pander(data.frame('高校名称' = university_table$u, '新增用户数' = university_table$n.x, '新增用户占比(%)' = u_wnu_ratio, '活跃用户数' = university_table$n.y, '活跃用户占比(%)' = u_wau_ratio), style = 'rmarkdown')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
