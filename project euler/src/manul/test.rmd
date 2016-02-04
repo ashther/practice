@@ -8,6 +8,7 @@ output: word_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, fig.height = 3, fig.width = 6)
 library(knitr)
+library(dplyr)
 library(pander)
 library(ggplot2)
 source('E:/Git/auto_report/dataSource.R')
@@ -180,13 +181,20 @@ edu <- weekly_data$weekly_cross_data$edu
 u_wnu <- weekly_data$weekly_cross_data$u_wnu
 u_wau <- weekly_data$weekly_cross_data$u_wau
 u_starts <- weekly_data$weekly_cross_data$u_starts
-university_table <- left_join(u_wnu, u_wau, by = 'u')
-u_wnu_ratio <- round(university_table$n.x / sum(university_table$n.x) * 100, 2)
-u_wau_ratio <- round(university_table$n.y / sum(university_table$n.y) * 100, 2)
+university_table <- left_join(u_wnu, u_wau, by = 'u') %>% 
+    mutate(u_wnu_ratio = round(n.x / sum(n.x) * 100, 2), u_wau_ratio = round(n.y / sum(n.y) * 100, 2)) %>% 
+    top_n(10, n.x) %>% 
+    select('高校名称' = u, '新增用户数' = n.x, '新增用户占比(%)' = u_wnu_ratio, 
+           '活跃用户数' = n.y, '活跃用户占比(%)' = u_wau_ratio)
 
 area_wnu <- weekly_data$weekly_cross_data$area_wnu
 area_wau <- weekly_data$weekly_cross_data$area_wau
 area_starts <- weekly_data$weekly_cross_data$area_starts
+area_table <- left_join(area_wnu, area_wau, by = 'area') %>% 
+    mutate(area_wnu_ratio = round(n.x / sum(n.x) * 100, 2), area_wau_ratio = round(n.y / sum(n.y) * 100, 2)) %>% 
+    top_n(10, n.x) %>% 
+    select('地区' = area, '新增用户数' = n.x, '新增用户占比(%)' = area_wnu_ratio, 
+           '活跃用户数' = n.y, '活跃用户占比(%)' = area_wau_ratio)
 
 hour_starts <- weekly_data$weekly_cross_data$hour_starts
 ```
@@ -215,14 +223,150 @@ ggplot(post_level, aes(x = '', y = n, fill = as.character(1:10))) + geom_bar(sta
 # need to change the fill parameters
 ggplot(edu, aes(x = '', y = n, fill = as.character(1:12))) + geom_bar(stat = 'identity', width = 1) + coord_polar(theta = 'y') + scale_fill_brewer(palette = 'Blues') + theme_minimal()
 ```
-**图1. 非学生用户学历占比**
+**图1. 学历占比**
 
 #### 地区分析
 
 **表2. thinkcoo近一周新增用户top10高校**
 ```{r university_table}
-pander(data.frame('高校名称' = university_table$u, '新增用户数' = university_table$n.x, '新增用户占比(%)' = u_wnu_ratio, '活跃用户数' = university_table$n.y, '活跃用户占比(%)' = u_wau_ratio), style = 'rmarkdown')
+pander(data.frame(university_table), style = 'rmarkdown')
 ```
+
+```{r university_fig}
+ggplot(u_wnu, aes(x = 1:10, y = n)) + geom_bar(stat = 'identity') + xlab('university') + scale_x_discrete(labels = c('', u_wnu$u))
+```
+**图1. 近一周新增用户top10高校**
+
+**表2. thinkcoo近一周新增用户top10地区**
+```{r area_table}
+pander(data.frame(area_table), style = 'rmarkdown')
+```
+
+```{r area_fig}
+ggplot(area_wnu, aes(x = 1:10, y = n)) + geom_bar(stat = 'identity') + xlab('area') + scale_x_discrete(labels = c('', area_wnu$area))
+```
+**图1. 近一周新增用户top10地区**
+
+#### 时段分析
+
+```{r hour_starts_fig}
+ggplot(hour_starts, aes(x = hour, y = n)) + geom_line(size = 1.5) + theme(axis.text.x = element_text(size = 10), axis.title.y = element_text(size = 10), axis.title.x = element_text(size = 10))
+```
+**图1. 近一周各时段thinkcoo启动次数**
+
+#### 设备类型
+
+### 渠道分析
+
+#### 时段详情
+
+#### 渠道详情
+
+*****
+
+## 产品分析
+
+### 各模块有效用户详情
+
+### 快信
+
+```{r quick_chat, include=FALSE}
+qc_user_quality <- weekly_data$qc$qc_user_quality %>% 
+    mutate(total = best + good + ok)
+qc_user_quality_long <- reshape(qc_user_quality, v.names = 'n', varying = c('best', 'good', 'ok', 'total'), timevar = 'quality', times = c('best', 'good', 'ok', 'total'), direction = 'long')
+
+qc_message <- weekly_data$qc$qc_message_this_w
+qc_message_log <- reshape(qc_message, v.names = 'n', varying = c('avg.x', 'avg.y'), timevar = 'time_ctg', times = c('avg.x', 'avg.y'), direction = 'long')
+
+qc_circle <- weekly_data$qc$qc_circle %>% t() 
+qc_circle <- cbind(qc_circle, round((qc_circle[, 1] - qc_circle[, 2]) * 100 / qc_circle[, 2], 2))
+```
+
+**表2. thinkcoo快信模块近一周用户质量变化趋势**
+```{r qc_user_quality_table}
+pander(data.frame('日期' = qc_user_quality$date, '优质' = qc_user_quality$best, '良好' = qc_user_quality$good, '一般' = qc_user_quality$ok, '合计' = qc_user_quality$total), style = 'rmarkdown')
+```
+
+```{r qc_user_quality_fig}
+ggplot(qc_user_quality_long, aes(x = rep(1:7, 4), y = n, colour = quality)) + geom_line(size = 1.5) + 
+    ylab('user') + xlab('date') + 
+    theme(axis.text.x = element_text(size = 10, angle = 45), 
+          axis.title.y = element_text(size = 10), 
+          axis.title.x = element_text(size = 10)) + 
+    scale_x_discrete(labels = qc_user_quality$date)
+```
+**图1. thinkcoo快信模块近一周用户质量变化趋势**
+
+**表2. thinkcoo快信模块近一周各类型消息数变化趋势**
+```{r qc_message_table}
+kable(data.frame('类型' = qc_message$ctg, '本周发送量' = qc_message$n.x, '本周人均发送量' = qc_message$avg.x, '上周发送量' = qc_message$n.y, '上周人均发送量' = qc_message$avg.y), format = 'markdown')
+```
+
+```{r qc_message_fig}
+ggplot(qc_message_log, aes(x = rep(1:10, 2), y = n, fill = time_ctg)) + geom_bar(stat = 'identity', position = 'dodge') + scale_x_discrete(labels = 0:10)
+```
+**图1. thinkcoo快信模块近一周各类型消息数变化趋势**
+
+**表2. thinkcoo快信模块近一周圈子主要指标变化趋势**
+```{r qc_circle_table}
+kable(data.frame('指标' = c('圈子数', '活跃圈子数', '圈子平均用户数', '圈子平均消息数'), '本周情况' = qc_circle[, 1], '上周情况' = qc_circle[, 2], '增长率(%)' = qc_circle[, 3], row.names = NULL), format = 'markdown')
+```
+
+```{r qc_circle_fig}
+qplot(x = c('n', 'active n', 'avgerage user', 'avgerage message'), y = qc_circle[, 3]) + geom_bar(stat = 'identity') + ylab('growth rate(%)')
+```
+**图1. thinkcoo快信模块近一周圈子主要指标变化趋势**
+
+### 软课表
+
+```{r course, include=FALSE}
+course <- weekly_data$course %>% t()
+course <- cbind(course, round((course[, 1] - course[, 2]) * 100 / course[, 2], 2))
+```
+
+**表2. thinkcoo软课表模块近一周主要指标变化趋势**
+```{r course_table}
+kable(data.frame('指标' = c('上传次数', '下载次数', '累计课程数', '新增课程数', '累计上传作业次数', '新增提交作业次数'), '本周情况' = course[1:6, 1], '上周情况' = course[1:6, 2], '增长率(%)' = course[1:6, 3], row.names = NULL), format = 'markdown')
+```
+
+```{r course_fig}
+qplot(x = c('upload', 'download', 'total course', 'new course', 'total homework', 'new homework'), y = course[1:6, 3]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)')
+```
+**图1. thinkcoo软课表模块近一周主要指标变化趋势**
+
+**表2. thinkcoo软课表模块近一周用户数变化趋势**
+```{r course_table}
+kable(data.frame('指标' = c('平均用户数', '累计用户数', '活跃用户数'), '本周情况' = course[7:9, 1], '上周情况' = course[7:9, 2], '增长率(%)' = course[7:9, 3], row.names = NULL), format = 'markdown')
+```
+
+```{r course_fig}
+qplot(x = c('average user', 'total user', 'active user'), y = course[7:9, 3]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)')
+```
+**图1. thinkcoo软课表模块近一周用户数变化趋势**
+
+### 勤务表
+
+```{r calendar, include=FALSE}
+cal_total <- weekly_data$cal$cal_total
+cal_city <- weekly_data$cal$cal_city
+cal_avg_user <- weekly_data$cal$cal_avg_user
+cal_label <- weekly_data$cal$cal_label
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
