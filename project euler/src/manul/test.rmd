@@ -351,7 +351,27 @@ cal_total <- weekly_data$cal$cal_total
 cal_city <- weekly_data$cal$cal_city
 cal_avg_user <- weekly_data$cal$cal_avg_user
 cal_label <- weekly_data$cal$cal_label
+
+city_level <- c('北京市' = 1, '上海市' = 1, '广州市' = 1, '深圳市' = 1, '重庆市' = 2, '天津市' = 2, '沈阳市' = 2, '南京市' = 2, '武汉市' = 2, '成都市' = 2, '大连市' = 2, '杭州市' = 2, '青岛市' = 2, '济南市' = 2, '厦门市' = 2, '福州市' = 2, '西安市' = 2, '长沙市' = 2)
+
+cal_city <- left_join(cal_city[[1]], cal_city[[2]], by = 'place') %>% `[`(c('place', 'n.x', 'n.y'))
+cal_city[is.na(cal_city)] <- 0
+cal_city <- cal_city %>% 
+    mutate(level = city_level[place])
+cal_city[is.na(cal_city)] <- 3
+
+cal_table <- by(cal_city[, c('n.x', 'n.y')], cal_city$level, colMeans) %>% 
+    do.call(rbind, .) %>% 
+    round(2) %>% 
+    rbind(cal_total, .)
+
+cal_user_table <- by(cal_city[, c('n.x', 'n.y')], cal_city$level, colMeans) %>% 
+    do.call(rbind, .) %>% 
+    round(2) %>% 
+    rbind(cal_total, .)
+
 ```
+
 
 
 
