@@ -30,9 +30,9 @@ remDr$open()
 remDr$navigate(umeng_url)
 
 test_login <- remDr$findElement('id', 'userId')
-test_login$sendKeysToElement(list('xayzxxkj@126.com'))
+test_login$sendKeysToElement(list('')) # need to send username
 test_pass <- remDr$findElement('id', 'passWord')
-test_pass$sendKeysToElement(list('abc123'))
+test_pass$sendKeysToElement(list('')) # need to send password
 test_cap <- remDr$findElement('id', 'captcha')
 
 remDr$screenshot(display = TRUE) # to see what captcha is
