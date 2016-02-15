@@ -17,6 +17,7 @@ library(RSelenium)
 #                          cookiefile = 'cookie.txt')
 
 # try RSelenium
+# need to set 'C:\Program Files\phantomjs-2.1.1-windows\bin;C:\Program Files\Java\jre1.8.0_73\bin' in path
 umeng_url <- 'http://www.umeng.com/apps/e282000ec3e85e7641e20365/reports/active_user'
 RSelenium::startServer()
 
