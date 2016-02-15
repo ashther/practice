@@ -1,5 +1,5 @@
 ---
-output: html_document
+output: word_document
 ---
 
 ### `r Sys.Date()`报告

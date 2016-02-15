@@ -1,6 +1,4 @@
 ---
-title: 'thinkcoo周报'
-date: "2016年2月3日"
 output: word_document
 ---
 
@@ -232,7 +230,8 @@ ggplot(edu, aes(x = '', y = n, fill = as.character(1:12))) + geom_bar(stat = 'id
 pander(data.frame(university_table), style = 'rmarkdown')
 ```
 
-```{r university_fig}
+```{r university_fig, eval=FALSE}
+# need to change eval when u_wnu is not null
 ggplot(u_wnu, aes(x = 1:10, y = n)) + geom_bar(stat = 'identity') + xlab('university') + scale_x_discrete(labels = c('', u_wnu$u))
 ```
 **图1. 近一周新增用户top10高校**
@@ -276,7 +275,8 @@ qc_user_quality <- weekly_data$qc$qc_user_quality %>%
 qc_user_quality_long <- reshape(qc_user_quality, v.names = 'n', varying = c('best', 'good', 'ok', 'total'), timevar = 'quality', times = c('best', 'good', 'ok', 'total'), direction = 'long')
 
 qc_message <- weekly_data$qc$qc_message_this_w
-qc_message_log <- reshape(qc_message, v.names = 'n', varying = c('avg.x', 'avg.y'), timevar = 'time_ctg', times = c('avg.x', 'avg.y'), direction = 'long')
+# uncomment when qc_message is not null
+# qc_message_log <- reshape(qc_message, v.names = 'n', varying = c('avg.x', 'avg.y'), timevar = 'time_ctg', times = c('avg.x', 'avg.y'), direction = 'long')
 
 qc_circle <- weekly_data$qc$qc_circle %>% t() 
 qc_circle <- cbind(qc_circle, round((qc_circle[, 1] - qc_circle[, 2]) * 100 / qc_circle[, 2], 2))
@@ -302,7 +302,8 @@ ggplot(qc_user_quality_long, aes(x = rep(1:7, 4), y = n, colour = quality)) + ge
 kable(data.frame('类型' = qc_message$ctg, '本周发送量' = qc_message$n.x, '本周人均发送量' = qc_message$avg.x, '上周发送量' = qc_message$n.y, '上周人均发送量' = qc_message$avg.y), format = 'markdown')
 ```
 
-```{r qc_message_fig}
+```{r qc_message_fig, eval=FALSE}
+# eval = TRUE when qc_message is not null
 ggplot(qc_message_log, aes(x = rep(1:10, 2), y = n, fill = time_ctg)) + geom_bar(stat = 'identity', position = 'dodge') + scale_x_discrete(labels = 0:10)
 ```
 **图1. thinkcoo快信模块近一周各类型消息数变化趋势**
@@ -335,11 +336,11 @@ qplot(x = c('upload', 'download', 'total course', 'new course', 'total homework'
 **图1. thinkcoo软课表模块近一周主要指标变化趋势**
 
 **表2. thinkcoo软课表模块近一周用户数变化趋势**
-```{r course_table}
+```{r course_user_table}
 kable(data.frame('指标' = c('平均用户数', '累计用户数', '活跃用户数'), '本周情况' = course[7:9, 1], '上周情况' = course[7:9, 2], '增长率(%)' = course[7:9, 3], row.names = NULL), format = 'markdown')
 ```
 
-```{r course_fig}
+```{r course_user_fig}
 qplot(x = c('average user', 'total user', 'active user'), y = course[7:9, 3]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)')
 ```
 **图1. thinkcoo软课表模块近一周用户数变化趋势**
@@ -354,7 +355,9 @@ cal_label <- weekly_data$cal$cal_label
 
 city_level <- c('北京市' = 1, '上海市' = 1, '广州市' = 1, '深圳市' = 1, '重庆市' = 2, '天津市' = 2, '沈阳市' = 2, '南京市' = 2, '武汉市' = 2, '成都市' = 2, '大连市' = 2, '杭州市' = 2, '青岛市' = 2, '济南市' = 2, '厦门市' = 2, '福州市' = 2, '西安市' = 2, '长沙市' = 2)
 
-cal_city <- left_join(cal_city[[1]], cal_city[[2]], by = 'place') %>% `[`(c('place', 'n.x', 'n.y'))
+cal_city <- left_join(cal_city[[1]], cal_city[[2]], by = 'place') %>% 
+    mutate(avg_user.x = round(user.x / n.x, 2), avg_user.y = round(user.y / n.y, 2)) %>% 
+    select(place, n.x, avg_user.x, n.y, avg_user.y)
 cal_city[is.na(cal_city)] <- 0
 cal_city <- cal_city %>% 
     mutate(level = city_level[place])
@@ -363,24 +366,167 @@ cal_city[is.na(cal_city)] <- 3
 cal_table <- by(cal_city[, c('n.x', 'n.y')], cal_city$level, colMeans) %>% 
     do.call(rbind, .) %>% 
     round(2) %>% 
-    rbind(cal_total, .)
+    rbind(cal_total, .) %>% 
+    as.data.frame() %>% 
+    mutate(ratio = round((n.x - n.y) / n.y, 2))
 
-cal_user_table <- by(cal_city[, c('n.x', 'n.y')], cal_city$level, colMeans) %>% 
+cal_user_table <- by(cal_city[, c('avg_user.x', 'avg_user.y')], cal_city$level, colMeans) %>% 
     do.call(rbind, .) %>% 
     round(2) %>% 
-    rbind(cal_total, .)
+    rbind(cal_avg_user, .) %>% 
+    as.data.frame() %>% 
+    mutate(ratio = round((avg_user.x - avg_user.y) / avg_user.y, 2))
 
+cal_label_1 <- cal_label[[1]][, 1] %>% strsplit(',') %>% unlist %>% unique() %>% 
+    sapply(function(t)length(grep(t, cal_label[[1]][, 1]))) %>% 
+    sort(decreasing = TRUE) %>% `[`(1:5) %>% 
+    data.frame(label = names(.), n = ., row.names = NULL, stringsAsFactors = FALSE)
+
+cal_label_2 <- cal_label[[2]][, 1] %>% strsplit(',') %>% unlist %>% unique() %>% 
+    sapply(function(t)length(grep(t, cal_label[[2]][, 1]))) %>% 
+    data.frame(label = names(.), n = ., row.names = NULL, stringsAsFactors = FALSE)
+
+cal_label_table <- left_join(cal_label_1, cal_label_2, by = 'label')
+cal_label_table[is.na(cal_label_table)] <- 0
+cal_label_table <- mutate(cal_label_table, ratio = round((n.x - n.y) / n.y, 2))
 ```
 
+**表2. thinkcoo勤务表活动数变化趋势**
+```{r cal_table}
+# need to change '指标'
+kable(data.frame('指标' = c('活动数量', '二线城市活动数量', '三线城市活动数量'), '本周情况' = cal_table[, 1], '上周情况' = cal_table[, 2], '增长率(%)' = cal_table[, 3], row.names = NULL), format = 'markdown')
+```
 
+```{r cal_table_fig}
+# need to change x
+qplot(x = c('total activity', 'second-tier', 'third-tier'), y = cal_table[, 3]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)') + xlab('')
+```
+**图1. thinkcoo勤务活动数变化趋势**
 
+**表2. thinkcoo勤务表用户数变化趋势**
+```{r cal_user_table}
+# need to change '指标'
+kable(data.frame('指标' = c('平均用户数', '二线城市平均用户数', '三线城市平均用户数量'), '本周情况' = cal_user_table[, 1], '上周情况' = cal_user_table[, 2], '增长率(%)' = cal_user_table[, 3], row.names = NULL), format = 'markdown')
+```
 
+```{r cal_user_fig}
+# need to change x
+qplot(x = c('average user', 'second-tier', 'third-tier'), y = cal_user_table[, 3]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)') + xlab('')
+```
+**图1. thinkcoo勤务表用户数变化趋势**
 
+**表2. thinkcoo勤务表不同类型活动数变化趋势**
+```{r cal_label_table}
+# need to change '指标'
+kable(data.frame('类型' = cal_label_table$label, '本周情况' = cal_label_table[, 2], '上周情况' = cal_label_table[, 3], '增长率(%)' = cal_label_table[, 4], row.names = NULL), format = 'markdown')
+```
 
+```{r cal_label_fig}
+# need to change x
+qplot(x = c('y', 'e', 'ml', 'mb', 'd'), y = cal_label_table[, 4]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)') + xlab('')
+```
+**图1. thinkcoo勤务表不同类型活动数变化趋势**
 
+### 自贸区
 
+```{r trade, include=FALSE}
+trade_total_sell <- weekly_data$trade$trade_total_sell %>% t()
+trade_new_sell <- weekly_data$trade$trade_new_sell %>% t()
+trade_total_buy <- weekly_data$trade$trade_total_buy %>% t()
+trade_new_buy <- weekly_data$trade$trade_new_buy %>% t()
+trade_user <- weekly_data$trade$trade_user %>% t()
+trade_ctg <- weekly_data$trade$trade_ctg
 
+trade_info_table <- rbind(trade_total_sell[1, ], trade_new_sell[1, ], trade_total_buy[1, ], trade_new_buy[1, ]) %>% 
+    as.data.frame() %>% 
+    mutate(ratio = round((V1 - V2) / V2, 2))
 
+trade_user_table <- rbind(trade_user, trade_total_sell[2, ], trade_new_sell[2, ], trade_total_buy[2, ], trade_new_buy[2, ]) %>% 
+    as.data.frame() %>% 
+    mutate(ratio = round((V1 - V2) / V2, 2))
+
+trade_ctg_table <- left_join(trade_ctg[[1]], trade_ctg[[2]], by = 'category_name') %>% 
+    mutate(ratio = round((n.x - n.y) / n.y, 2))
+```
+
+**表2. thinkcoo自贸区商品信息数变化趋势**
+```{r trade_info_table}
+# need to change '指标'
+kable(data.frame('指标' = c('累计出售商品数', '新增出售商品数', '累计购买商品数', '新增求购商品数'), '本周情况' = trade_info_table[, 1], '上周情况' = trade_info_table[, 2], '增长率(%)' = trade_info_table[, 3], row.names = NULL), format = 'markdown')
+```
+
+```{r trade_info_fig}
+# need to change x
+qplot(x = c('total sell', 'new sell', 'total purchase', 'new purchase'), y = trade_info_table[, 3]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)') + xlab('')
+```
+**图1. thinkcoo自贸区商品信息数变化趋势**
+
+**表2. thinkcoo自贸区用户数变化趋势**
+```{r trade_user_table}
+# need to change '指标'
+kable(data.frame('指标' = c('累计用户总数', '累计卖家数', '活跃卖家数', '累计买家数', '活跃买家数'), '本周情况' = trade_user_table[, 1], '上周情况' = trade_user_table[, 2], '增长率(%)' = trade_user_table[, 3], row.names = NULL), format = 'markdown')
+```
+
+```{r trade_user_fig}
+# need to change x
+qplot(x = c('total user', 'total seller', 'active seller', 'total buyer', 'active buyer'), y = trade_user_table[, 3]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)') + xlab('')
+```
+**图1. thinkcoo自贸区用户数变化趋势**
+
+**表2. thinkcoo自贸区各类型出售商品数变化趋势**
+```{r trade_ctg_table}
+# need to change '指标'
+kable(data.frame('类型' = trade_ctg_table$category_name, '本周情况' = trade_ctg_table[, 2], '上周情况' = trade_ctg_table[, 3], '增长率(%)' = trade_ctg_table[, 4], row.names = NULL), format = 'markdown')
+```
+
+```{r trade_ctg_fig}
+# need to change x
+qplot(x = c('other', 'book/music/movie', 'appliances', 'phone', 'consumer electronic', 'outdoor', 'daily', 'computer'), y = trade_ctg_table[, 4]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)') + xlab('')
+```
+**图1. thinkcoo自贸区各类型出售商品数变化趋势**
+
+### 个人求职
+
+```{r hr, include=FALSE}
+hr_total_user <- weekly_data$hr$hr_total_user
+hr_new_user <- weekly_data$hr$hr_new_user
+hr_company <- weekly_data$hr$hr_company %>% t()
+hr_new_recruitment <- weekly_data$hr$hr_new_recruitment
+hr_user_avg_operation <- weekly_data$hr$hr_user_avg_operation
+hr_company_avg_operation <- weekly_data$hr$hr_company_avg_operation
+
+hr_user_table <- rbind(hr_total_user, hr_new_user, hr_user_avg_operation) %>% 
+    as.data.frame() %>% 
+    mutate(ratio = round((V1 - V2) / V2, 2))
+
+hr_company_table <- rbind(hr_company, hr_new_recruitment, hr_company_avg_operation) %>% 
+    as.data.frame() %>% 
+    mutate(ratio = round((V1 - V2) / V2, 2))
+```
+
+**表2. thinkcoo求职个人用户主要指标变化趋势**
+```{r hr_user_table}
+# need to change '指标'
+kable(data.frame('指标' = c('累计用户总数', '新增用户数', '个人平均操作招聘需求次数'), '本周情况' = hr_user_table[, 1], '上周情况' = hr_user_table[, 2], '增长率(%)' = hr_user_table[, 3], row.names = NULL), format = 'markdown')
+```
+
+```{r hr_user_fig}
+# need to change x
+qplot(x = c('total user', 'new user', 'average operation'), y = hr_user_table[, 3]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)') + xlab('')
+```
+**图1. thinkcoo求职个人用户主要指标变化趋势**
+
+**表2. thinkcoo求职企业用户主要指标变化趋势**
+```{r hr_company_table}
+# need to change '指标'
+kable(data.frame('指标' = c('累计企业用户总数', '累计招聘需求数', '企业平均发布招聘需求数', '新增招聘需求数', '企业用户平均操作简历数'), '本周情况' = hr_company_table[, 1], '上周情况' = hr_company_table[, 2], '增长率(%)' = hr_company_table[, 3], row.names = NULL), format = 'markdown')
+```
+
+```{r hr_company_fig}
+# need to change x
+qplot(x = c('total company', 'total recruitment', 'average recruitment', 'new recruitment', 'average operation'), y = hr_company_table[, 3]) + geom_bar(stat = 'identity', width = 0.5) + ylab('growth rate(%)') + xlab('')
+```
+**图1. thinkcoo求职企业用户主要指标变化趋势**
 
 
 
