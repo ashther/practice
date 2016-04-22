@@ -7,7 +7,7 @@ R> unlist(str_extract_all(example.obj, "sentence"))
 ```
 `stringr`包提供了很多类似于`str_whatever()`和`str_whatever_all()`的函数。前者定位于第一个匹配的字符串，后者则取得全部匹配实例。所有这些函数的语法都是被研究的字符向量作为第一个参数，正则表达式作为第二个，所有可能的其他值都跟随其后。这些函数的一致性就是为什么我们更喜欢用由Hadley Wickham (2010)开发的`stringr`包的原因。我们将在8.2节中介绍更多这个包的细节。表8.5展示了`stringr`包在`R`基础环境下的等价函数。
 由于一般对多个字符串操作时调用`str_extract_all()`函数，所以其结果是一个`list`，`list`中每个元素对应于一个字符串的匹配结果。在上面的调用中我们输入的字符串是一个长度为1的字符向量，因此，函数返回是一个长度为1的`list`，对其我们用`unlist()`以获得更方便的呈现。为了与此进行比较，我们将在多字符串上调用这个函数。我们创建一个包含字符串`text`，`manipulation`和`basics`的向量。我们用`str_extract_all()`函数提取所有匹配模式`a`的实例：
-```
+```r
 R> out <- str_extract_all(c("text", "manipulation", "basics"), "a")
 R> out
 [[1]]
@@ -19,7 +19,7 @@ character(0)
 ```
 这个函数返回了与输入向量等长的`list`，长度为3，`list`中各个元素对应了各个字符串的匹配结果。因为在第一个字符串里没有`a`，所以第一个元素是一个空的字符向量。第二个字符串包含两个`a`，第三个包含一个。
 字符匹配默认是区分大小写的。因此，在正则表达式中大小写字符是不一样的。
-```
+```r
 R> str_extract(example.obj, "small")
 [1] "small"
 small is contained in the example string while SMALL is not.
@@ -27,49 +27,49 @@ R> str_extract(example.obj, "SMALL")
 [1] NA
 ```
 所以，函数没有提取出匹配的值。我们可以通过附上函数`ignore.case()`来改变这种行为。
-```
+```r
 R> str_extract(example.obj, ignore.case("SMALL"))
 [1] "small"
 ```
 我们没有必要一定用正则表达式。字符串可以是简单的字符序列。因此，我们也可以匹配字...
-```
+```r
 R> unlist(str_extract_all(example.obj, "en"))
 [1] "en" "en" "en" "en"
 ```
 ...或者是字母与空格的混合。
-```
+```r
 R> str_extract(example.obj, "mall sent")
 [1] "mall sent"
 ```
 在这个例子中搜索模式`en`返回所有模式的实例，也就是在`sentence`里所有的匹配项，这个例子里出现了两次。有时我们不是简单地关心在字符串中找到匹配项，而是关注字符串特定的位置。我们可以通过两个简单的正则表达式附加参数来指定位置。正则表达式开始处的`^`符号注明了字符串的起始，`$`注明了结尾。因此，从下面的例子中提取2会返回2。
-```
+```r
 R> str_extract(example.obj, "2")
 [1] "2"
 ```
 而从字符串的起始提取2就会失败。
-```
+```r
 R> str_extract(example.obj, "ˆ2")
 [1] NA
 ```
 同样的，符号`$`注明了字符串结尾，也就是...
-```
+```r
 R> unlist(str_extract_all(example.obj, "sentence$"))
 character(0)
 ```
 ...返回了空字符向量，在`sentence`中没有找到匹配项。另外一个正则表达式附加参数是管道操作符，表示为`|`。这个字符被看做`or`操作符，所以函数将返回这个表达式在管道操作符之前和之后所有模式的匹配项。
-```
+```r
 R> unlist(str_extract_all(example.obj, "tiny|sentence"))
 [1] "sentence" "tiny" "sentence"
 ```
 
 8.1.2 普适正则表达式
 到目前为止，我们仅仅匹配了固定的表达式。但是正则表达式的能力来自于可以利用其写出更加灵活的、普适的查询条件。其中最为普适的是句号，它能够匹配任何字符。
-```
+```r
 R> str_extract(example.obj, "sm.ll")
 [1] "small
 ```
 正则表达式另外一个强大的普适性就是字符集，用括号`[]`括起来。字符集表示任何在其中的字符都将被匹配。
-```
+```r
 R> str_extract(example.obj, "sm[abc]ll")
 [1] "small"
 ```
@@ -80,22 +80,22 @@ R> str_extract(example.obj, "sm[abc]ll")
 ==============================================================================
 
 
-```
+```r
 R> str_extract(example.obj, "A.+sentence")
 [1] "A small sentence. - 2. Another tiny sentence"
 ```
 `R`提供贪婪的量化。这意味着这段程序尝试从前面的字符中提取最大可能的序列。由于`.`匹配任意字符，所以这个函数返回了`sentence`前面最大可能的序列。我们可以通过给表达式增加一个`?`来改变这种行为，从而指明我们仅仅要查找`sentence`前面最短的可能序列。符号`?`意味着前面的元素是可选项，而且将最多被匹配一次（参加表8.2）。
-```
+```r
 R> str_extract(example.obj, "A.+?sentence")
 [1] "A small sentence"
 ```
 我们不仅可以提供量词来指明单字符，也可以用括号把一组字符括起来。
-```
+```r
 R> unlist(str_extract_all(example.obj, "(.en){1,5}"))
 [1] "senten" "senten"
 ```
 在这种情况下，我们要求函数返回一个首字符可以是任意字符、第二个和第三个字符必须是`e`和`n`的字符序列。我们要求函数对所有至少出现过一次、但最多五次这个序列的实例进行返回。符合这个要求的最长可能序列将有`3 * 5 = 15`个字符，而且第二个和第三个字符是`e`和`n`。在下一个代码片段中我们去掉了括号，这个函数将匹配所有从`e`到`n`的序列，`n`最少出现一次最多五次。考虑一下前后两次结果的区别：
-```
+```r
 R> unlist(str_extract_all(example.obj, ".en{1,5}"))
 [1] "sen" "ten" "sen" "ten"
 ```
@@ -113,37 +113,37 @@ R> unlist(str_extract_all(example.obj, ".en{1,5}"))
 \> 匹配单词结束
 
 到目前为止，我们碰到了很多在正则表达式里有特殊意义的字符。他们被称作元字符。为了从字面意义上去匹配这些字符，可以在他们前面加上两个反斜线。为了从一直在使用的例子中提取字面意义上的这些字符，我们要这么写
-```
+```r
 R> unlist(str_extract_all(example.obj, "\\."))
 [1] "." "." "." "."
 ```
 字符前的双反斜线被解释成字面意义上的单反斜线。在正则表达式中输入单反斜线将被解释成引入一个转义序列。对于网络抓取任务来说，这些转义序列非常普遍，你应该熟悉他们。最常见的是`\m`和`\t`，分别表示新的一行和制表符。举个栗子，`a\n\n\na`被解释成`a`，新的三行，再一个`a`。如果我们希望整个正则表达式被按字面意义来解释，我们有一个比在所有元字符前面加反斜线更好的办法。我们可以用`fixed()`把表达式括起来以达到按字面意义解释元字符的目的。
-```
+```r
 R> unlist(str_extract_all(example.obj, fixed(".")))
 [1] "." "." "." "."
 ```
 大多数元字符在字符集中都会失去其特殊意义。举个栗子，在字符集中一个圆点字符仅会匹配一个字面意义上的圆点字符。对于这条规则有两个例外，就是`^`和`-`。把前者放到一个字符集的开始将会匹配字符集内容的补集，后者在字符集中则会描述字符的范围。要改变这种行为，需要将`-`放到字符集的开始或者结尾，在这种情况下，它会被按字面意义解释。
 关于正则表达式我们这里最后想介绍的是一些被赋到特殊字符集上的快捷键，表8.3说明了可用快捷键的概况。
 考虑一下`\w`字符，这个字符匹配我们例子中的任意字，就像这样...
-```
+```r
 R> unlist(str_extract_all(example.obj, "\\w+"))
 [1] "1" "A" "small" "sentence" "2" "Another"
 [7] "tiny" "sentence"
 ```
 ...提取了被空格或标点分隔的每一个字。注意到`\w`相当于`[[:alnum:]_] `因此前面的数字被解释成了单字。考虑一下`\>`，`\<`和`\b`，利用他们我们可以在匹配位置方面更加精确。想象一下我们要从我们的例子中提取所有位于单词末尾的`e`。为了达到这个效果，我们可以使用下面两个表达式：
-```
+```r
 R> unlist(str_extract_all(example.obj, "e\\>"))
 [1] "e" "e"
 R> unlist(str_extract_all(example.obj, "e\\b"))
 [1] "e" "e"
 ```
 这个查询从`sentence`这个词的边界处提取出了两个`e`（因为`example.obj`中有两个`sentence`）。最后，我们甚至可以匹配一个已经被正则表达式匹配的序列，这叫做反向引用。假设说，我们在我们的例子中查找第一个字母——不管是什么——并用其匹配其他的实例。为了达到这个效果，我们用括号把这些元素括起来——举个栗子，`([[:alpha:]])`，用`\1`引用它。
-```
+```r
 R> str_extract(example.obj, "([[:alpha:]]).+?\\1")
 [1] "A small sentence. - 2. A"
 ```
 在这个例子中，这个字母是`A`。这个函数返回了匹配项直到下一个`A`之间的字符。为了让例子再复杂点，我们现在查找一个不包含`a`的小写单词直到后面再出现这个单词间的字符。
-```
+```r
 R> str_extract(example.obj, "(\\<[b-z]+\\>).+?\\1")
 [1] "sentence. - 2. Another tiny sentence"
 ```
@@ -153,7 +153,7 @@ R> str_extract(example.obj, "(\\<[b-z]+\\>).+?\\1")
 ===============================================================================
 
 ...`str_extract_all()`提取了所有匹配项。
-```
+```r
 R> str_extract_all(example.obj, "[[:digit:]]")
 [[1]]
 [1] "1" "2"
@@ -184,29 +184,29 @@ Table 8.4 `stringr`包里的函数
 `str_c()` 连接字符串 字符向量
 
 我们已经指出了函数输出的不同之处。前面的例子返回了一个字符向量，而后面的则返回了列表。表8.4给出了本章节将会介绍的不同函数的概况。第二列对这些函数进行了简短地描述，第三列指明了返回值格式。如果相比提取，我们更关心给定字符串中匹配项的位置，我们要使用`str_locate()`和`str_locate_all()`函数。
-```
+```r
 R> str_locate(example.obj, "tiny")
 start end
 [1,] 35 38
 ```
 这个函数输出了第一个匹配项的起始和结束位置的矩阵，在这个例子中分别是第35和第38个字符。我们可以利用位置信息和`str_sub()`函数来提取子串。
-```
+```r
 R> str_sub(example.obj, start = 35, end = 38)
 [1] "tiny"
 ```
 这里我们提取了已经知道是`tiny`单词的第35到第38个字符。可能我们更经常做的是替换给定子串，通常可以利用赋值操作符来完成。
-```
+```r
 R> str_sub(example.obj, 35, 38) <- "huge"
 R> example.obj
 [1] "1. A small sentence. - 2. Another huge sentence."
 ```
 `str_replace()`和`str_replace_all()`更加常用在替换过程上。
-```
+```r
 R> str_replace(example.obj, pattern = "huge", replacement = "giant")
 [1] "1. A small sentence. - 2. Another giant sentence."
 ```
 我们可能会关心将字符串分割成几个较小的子串。举个最简单的栗子，我们定义一个分割符，比如说`-`。
-```
+```r
 R> unlist(str_split(example.obj, "-"))
 [1] "1. A small sentence. " " 2. Another huge sentence."
 ```
