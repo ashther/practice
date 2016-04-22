@@ -1,7 +1,7 @@
 8.1.1 精确字符匹配
 
 我们在这里以及这章节余下部分使用的函数是来自`stringr`包的`str_extract()`，这里已经假定它被载入了。这个函数是这么定义的：`str_extract(string, pattern)`，我们先传入字符串`string`， 我们将在其中寻找第二个表达式。注意与`grep()`或者`grepl()`等基础函数的区别，它们的第一个参数一般是正则表达式。这个函数将返回在给定字符串中找到与正则表达式相匹配的第一个实例。我们也可以通过调用`str_extract_all()`让`R`提取所有匹配项：
-```
+```r
 R> unlist(str_extract_all(example.obj, "sentence"))
 [1] "sentence" "sentence"
 ```
