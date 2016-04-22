@@ -101,17 +101,18 @@ R> unlist(str_extract_all(example.obj, ".en{1,5}"))
 ```
 
 表8.3 选择有特殊意义的字符
-
-\w 任意一个字母或数字或下划线: [[:alnum:]_]
-\W 匹配所有的字母、数字、下划线以外的字符: [ˆ[:alnum:]_]
-\s 包括空格、制表符、换页符等空白字符的其中任意一个: [[:blank:]]
-\S 匹配所有非空白字符: [ˆ[:blank:]]
-\d 任意一个数字，0~9 中的任意一个: [[:digit:]]
-\D 匹配所有的非数字字符: [ˆ[:digit:]]
-\b 匹配一个单词边界，也就是单词和空格之间的位置，不匹配任何字符
-\B 匹配非单词边界，即左右两边都是 "\w" 范围或者左右两边都不是 "\w" 范围时的字符缝隙
-\< 匹配单词起始
-\> 匹配单词结束
+元字符 | 描述 
+---|----
+\w | 任意一个字母或数字或下划线: [[:alnum:]_]
+\W | 匹配所有的字母、数字、下划线以外的字符: [ˆ[:alnum:]_]
+\s | 包括空格、制表符、换页符等空白字符的其中任意一个: [[:blank:]]
+\S | 匹配所有非空白字符: [ˆ[:blank:]]
+\d | 任意一个数字，0~9 中的任意一个: [[:digit:]]
+\D | 匹配所有的非数字字符: [ˆ[:digit:]]
+\b | 匹配一个单词边界，也就是单词和空格之间的位置，不匹配任何字符
+\B | 匹配非单词边界，即左右两边都是 "\w" 范围或者左右两边都不是 "\w" 范围时的字符缝隙
+\< | 匹配单词起始
+\> | 匹配单词结束
 
 到目前为止，我们碰到了很多在正则表达式里有特殊意义的字符。他们被称作元字符。为了从字面意义上去匹配这些字符，可以在他们前面加上两个反斜线。为了从一直在使用的例子中提取字面意义上的这些字符，我们要这么写
 ```r
@@ -162,27 +163,25 @@ R> str_extract_all(example.obj, "[[:digit:]]")
 
 Table 8.4 `stringr`包里的函数
 函数 | 描述 | 输出
---------------------
-使用正则表达式的函数
---------------------
+-----|------|-------
+使用正则表达式的函数| |
 `str_extract()` | 提取匹配模式的第一个字符串 | 字符向量
-`str_extract_all()` 提取匹配模式的所有字符串 字符向量列表
-`str_locate()` 返回第一个匹配项的位置 起始/结束位置矩阵
-`str_locate_all()` 返回所有匹配项的位置 矩阵列表
-`str_replace()` 替换第一个匹配项 字符向量
-`str_replace_all()` 替换所有匹配项 字符向量
-`str_split()` 在该模式下分割字符串 字符向量列表
-`str_split_fixed()` 在该模式下将字符串分割成固定数量的片段 字符向量矩阵
-`str_detect()` 在字符串中探测模式 布尔值向量
-`str_count()` 对字符串中模式计数 数值向量
-
-更多的函数
-`str_sub()` 按位置提取字符串 字符向量
-`str_dup()` 复制字符串 字符向量
-`str_length()` 返回字符串长度 数值向量
-`str_pad()` 补充字符串长度 字符向量
-`str_trim()` D去掉字符串填充物（空格等） 字符向量
-`str_c()` 连接字符串 字符向量
+`str_extract_all()` | 提取匹配模式的所有字符串 | 字符向量列表
+`str_locate()` | 返回第一个匹配项的位置 | 起始/结束位置矩阵
+`str_locate_all()` | 返回所有匹配项的位置 | 矩阵列表
+`str_replace()` | 替换第一个匹配项 | 字符向量
+`str_replace_all()` | 替换所有匹配项 | 字符向量
+`str_split()` | 在该模式下分割字符串 | 字符向量列表
+`str_split_fixed()` | 在该模式下将字符串分割成固定数量的片段 | 字符向量矩阵
+`str_detect()` | 在字符串中探测模式 | 布尔值向量
+`str_count()` | 对字符串中模式计数 | 数值向量
+更多的函数 | |
+`str_sub()` | 按位置提取字符串 | 字符向量
+`str_dup()` | 复制字符串 | 字符向量
+`str_length()` | 返回字符串长度 | 数值向量
+`str_pad()` | 补充字符串长度 | 字符向量
+`str_trim()` | 去掉字符串填充物（空格等） | 字符向量
+`str_c()`| 连接字符串 | 字符向量
 
 我们已经指出了函数输出的不同之处。前面的例子返回了一个字符向量，而后面的则返回了列表。表8.4给出了本章节将会介绍的不同函数的概况。第二列对这些函数进行了简短地描述，第三列指明了返回值格式。如果相比提取，我们更关心给定字符串中匹配项的位置，我们要使用`str_locate()`和`str_locate_all()`函数。
 ```r
@@ -211,3 +210,77 @@ R> str_replace(example.obj, pattern = "huge", replacement = "giant")
 R> unlist(str_split(example.obj, "-"))
 [1] "1. A small sentence. " " 2. Another huge sentence."
 ```
+我们可以设定字符串被分割的份数。如果我们想按照每个空格分割字符串，但不希望结果超过5个，我们可以写成
+```r
+R> as.character(str_split_fixed(example.obj, "[[:blank:]]", 5))
+[1] "1." "A"
+[3] "small" "sentence."
+[5] "- 2. Another huge sentence."
+```
+我们可以同时在多个字符串上调用这个函数。假设有一个由多个字符串组成的字符向量：
+```r
+R> char.vec <- c("this", "and this", "and that")
+```
+我们首先可以在这个字符向量里检查一下特定模式是否出现。假设我们想知道模式`this`是否出现在给定向量的元素中。我们用`str_detect()`来完成这个。
+```r
+R> str_detect(char.vec, "this")
+[1] TRUE TRUE FALSE
+```
+此外，我们可能想知道这个特定的词出现的频率...
+```r
+R> str_count(char.vec, "this")
+[1] 1 1 0
+```
+...或者想知道各个元素有多少个字
+```r
+R> str_count(char.vec, "\\w+")
+[1] 1 2 2
+```
+我们可以复制字符串...
+```r
+R> dup.obj <- str_dup(char.vec, 3)
+R> dup.obj
+[1] "thisthisthis" "and thisand thisand this"
+[3] "and thatand thatand that"
+```
+...或者数一下给定字符串的字符数。
+```r
+R> length.char.vec <- str_length(char.vec)
+R> length.char.vec
+[1] 4 8 8
+```
+在操作网络数据时`str_pad()`和`str_trim()`两个函数非常重要，他们被用来在字符串边界上增加字符或者删除空格。
+
+=======================================================================
+
+尽管已经有很多好使的函数，但当缺少一个特殊的必要函数时总会导致一些问题。其中可能就有下面说的问题。想象我们必须在一个字符向量中检查不止一个模式，并且想得到一个指明符合匹配条件行的逻辑向量，或者一个列出所有符合匹配条件行号的索引。为了检查模式，我们知道可以用`grep()`，`grepl()`或者`str_detect()`。因为`grep()`提供了一个返回匹配文本或者行索引向量的开关，所以我们会尝试用`grep()`构建一个解决方案。我们首先下载一个*Simpsons*剧集的测试集，并把它保存在本地文件`episodes.Rdata`中。
+```r
+R> library(XML)
+R> # download file
+R> if(!file.exists("listOfSimpsonsEpisodes.html")){
+link <- "http://en.wikipedia.org/wiki/List_of_The_Simpsons_episodes"
+download.file(link, "listOfSimpsonsEpisodes.html", mode="wb")
+}
+R> # getting the table
+R> tables <- readHTMLTable("listOfSimpsonsEpisodes.html",
+header=T, stringsAsFactors=F)
+R> tmpcols <- names(tables[[3]])
+R> for(i in 3:20){
+tmpcols <- intersect(tmpcols, names(tables[[i]]))
+}
+R> episodes <- NULL
+R> for(i in 3:20){
+episodes <- rbind(episodes[,tmpcols],tables[[i]][,tmpcols])
+}
+R> for(i in 1:dim(episodes)[2]){
+Encoding(episodes[,i]) <- "UTF-8"
+}
+R> names(episodes) <- c("pnr", "nr", "title", "directedby",
+"Writtenby", "airdate", "productioncode")
+R> save(episodes,file="episodes.Rdata")
+```
+让我们载入包含所有*Simpsons*剧集的表格。
+```r
+R> load("episodes.Rdata")
+```
+就像你下面看到的，可以简单地在同一个问题——哪一集标题提到了Homer——的不同答案之间切换
