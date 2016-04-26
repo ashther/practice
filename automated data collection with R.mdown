@@ -283,4 +283,48 @@ R> save(episodes,file="episodes.Rdata")
 ```r
 R> load("episodes.Rdata")
 ```
-就像你下面看到的，可以简单地在同一个问题——哪一集标题提到了Homer——的不同答案之间切换
+就像你下面看到的，可以简单地在同一个问题——哪一集标题提到了Homer——的不同答案之间切换，使用`grep()`和`grepl()`并且让参数`value = TRUE`。这个简单的改变让这些函数有时候特别有用，比如我们最后可能需要一个索引或逻辑向量，但是我们可以用这个`value`参数去检查一下使用的模式是不是真的起作用了。
+```r
+R> grep("Homer",episodes$title[1:10], value=T)
+[1] "Homer's Odyssey" "Homer's Night Out"
+R> grepl("Homer",episodes$title[1:10])
+[1] FALSE FALSE TRUE FALSE FALSE FALSE FALSE FALSE FALSE TRUE
+```
+但是，这个参数选项不能同时匹配多个模式。假设我们想知道这些剧集是否在标题里同时提到了Homer和Lisa。标准的作法是分别给匹配的模式做一个逻辑向量，然后合二为一，`TRUE`代表所有模式都找到了。
+```r
+R> iffer1 <- grepl("Homer",episodes$title)
+R> iffer2 <- grepl("Lisa",episodes$title)
+R> iffer <- iffer1 & iffer2
+R> episodes$title[iffer]
+[1] "Homer vs. Lisa and the 8th Commandment"
+```
+尽管在两个模式的时候这种办法看起来还可以接受，但当模式的数量增加或需要反复做这项工作时它就变得越来越麻烦。因此我们将基于`grep()`创造一个新的函数。
+```r
+R> grepall <- function(pattern, x,
+ignore.case = FALSE, perl = FALSE,
+fixed = FALSE, useBytes = FALSE,
+value=FALSE, logic=FALSE){
+214 AUTOMATED DATA COLLECTION WITH R
+# error and exception handling
+if(length(pattern)==0 | length(x)==0){
+warning("Length of pattern or data equals zero.")
+return(NULL)
+}
+# apply grepl() and all()
+indicies <- sapply(pattern, grepl, x,
+ignore.case, perl, fixed, useBytes)
+index <- apply(indicies, 1, all)
+# indexation and return of results
+if(logic==T) return(index)
+if(value==F) return((1:length(x))[index])
+if(value==T) return(x[index])
+}
+R> grepall(c("Lisa","Homer"), episodes$title)
+[1] 26
+R> grepall(c("Lisa","Homer"), episodes$title, value=T)
+[1] "Homer vs. Lisa and the 8th Commandment"
+```
+`grepall()`函数的思路是我们需要重复一系列的模式搜索——就像前面代码片段中两个单独的模式搜索。重复一系列的事可以使用循环或者使用更高效（？）的apply函数族。因此，我们首先调用`grepl()`函数以获得指明哪行找到模式的逻辑向量。由于我们的输入是向量而且希望输出是一个矩阵所以我们使用了`sapply()`函数。我们得到的矩阵的列指的是用来搜索的不同模式，行指的是独立的字符串。为了确定在某个特定的行中找到了所有的模式我们使用了第二个apply函数——这次我们用`apply()`函数，因为输入是矩阵——当一行里所有值为真时`all()`函数返回`TRUE`，但凡有一个为假则返回`FALSE`，`value`参数的选项取决于我们想要返回一个匹配所有模式的索引向量还是要返回对应的文本。为了得到逻辑向量我们可以用`logic`参数。除了向多搜索项提供像`grep()`和`grepl()`一样的函数功能外，所有其他的参数像`ignore.case`、`perl`、`fixed`或者`useBytes`都被直接传给了第一步的sapply，所以新函数同样具有这些功能。
+
+8.3 字符编码
+当处理网络数据时——特别是非英语的数据——我们很快就会碰到编码问题。没有处理这些问题的简单办法，通常来说，字符编码是关于如何将二进制编码转换成人类可读的字符。举个栗子，`01100100`表示的是一个`d`。世界上有许多语言，也有许多特殊字符，像`a`、`ø`、` c`等。
