@@ -49,3 +49,5 @@ Temporary Items
 *.txt
 *.docx
 *.html
+.Rproj.user
+*.rar
