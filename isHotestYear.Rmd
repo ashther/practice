@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ---
 title: "Is 2016 the HOTTEST year in past 20 years in Xi'an?"
 output:
@@ -103,3 +104,103 @@ weather_xian %>%
 ```
 
 ![2006年日平均温度](avg_2016.png)
+=======
+---
+title: "Is 2016 the HOTEST year in past 20 years in Xi'an?"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(magrittr)
+library(weatherData)
+library(ggplot2)
+library(rChartsCalendar)
+
+weather_xian <- seq(1996, 2016, 1) %>% 
+  lapply(getWeatherForYear, station_id = 'XIY') %>% 
+  do.call(rbind, .) %T>% {
+    .$Date <- as.POSIXct(.$Date)
+  } %>% 
+  mutate(week = format(Date, '%Y-%W')) %>% 
+  separate(Date, c('year', 'month', 'day'))
+
+groupTop <- function(weather_xian, varGrup, varMn, k) {
+  varGrup <- lapply(varGrup, as.symbol)
+  weather_xian %>% 
+    group_by_(.dots = varGrup) %>% 
+    summarise_(value = sprintf("mean(%s, na.rm = TRUE)", varMn)) %>% 
+    top_n(k) %>% 
+    arrange(desc(value))
+}
+
+```
+
+```{r}
+groupTop(weather_xian, c('year', 'month'), 'Mean_TemperatureC', 10)
+groupTop(weather_xian, c('year', 'month'), 'Max_TemperatureC', 10)
+```
+
+```{r}
+groupTop(weather_xian, 'week', 'Mean_TemperatureC', 10)
+groupTop(weather_xian, 'week', 'Max_TemperatureC', 10)
+```
+
+```{r}
+weather_xian %>% 
+  group_by(year, month) %>% 
+  summarise(avg = mean(Mean_TemperatureC, na.rm = TRUE)) %>% 
+  ungroup() %T>% {
+    .$year <- as.integer(.$year)
+    .$month <- as.integer(.$month)
+  } %>% 
+  ggplot(aes(year, avg)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE) + 
+  facet_wrap( ~ month)
+```
+![1996年至2006年各月平均温度](month_temp.png)
+
+```{r}
+weather_xian %>% 
+  group_by(month, day) %>% 
+  summarise(avg = mean(Mean_TemperatureC, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  unite(date, month, day, sep = '-') %>% 
+  transform(date = as.character(as.Date(date, '%m-%d'))) %>% 
+  filter(avg >= 27) %>% 
+  plotCalMap(
+    x = 'date', 
+    y = 'avg', 
+    data = ., 
+    domain = 'month', 
+    start = '2016-06-01', 
+    legend = seq(27, 35, 1), 
+    itemName = 'temperatureC', 
+    range = 3
+  )
+```
+
+![1996年至2006年日平均温度](avg_1996_2016.png)
+
+```{r, echo=TRUE}
+weather_xian %>% 
+  filter(year == '2016') %>% 
+  unite(date, month, day, sep = '-') %>% 
+  transform(date = as.character(as.Date(date, '%m-%d'))) %>% 
+  filter(Mean_TemperatureC >= 27) %>% 
+  plotCalMap(
+    x = 'date', 
+    y = 'Mean_TemperatureC', 
+    data = ., 
+    domain = 'month', 
+    start = '2016-06-01', 
+    legend = seq(27, 35, 1), 
+    itemName = 'temperatureC', 
+    range = 3
+  )
+```
+
+![2006年日平均温度](avg_2016.png)
+>>>>>>> origin/master
