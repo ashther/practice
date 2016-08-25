@@ -53,6 +53,7 @@ weather_xian %>%
   geom_smooth(se = FALSE) + 
   facet_wrap( ~ month)
 ```
+![1996年至2006年各月平均温度](month_temp.png)
 
 ```{r}
 weather_xian %>% 
