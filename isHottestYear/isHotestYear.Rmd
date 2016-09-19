@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 ---
 title: "Is 2016 the HOTTEST year in past 20 years in Xi'an?"
 output:
