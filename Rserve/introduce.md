@@ -22,7 +22,7 @@ library(Rserve)
 Rserve()
 ```
 
-你的控制台将会看到：
+你的控制台将会看到：  
 ![2](2.png)
 
 
@@ -33,13 +33,13 @@ Rserve()
 * Rserve提供了一些用在java程序中的客户端jars，这些jar文件已经包含在了安装好的Rserve包里
 * 我的这些jar文件在**D:\ProgramFiles\R\R-3.1.3\library\Rserve\java\**，你的在**<YOUR_R_HOME>\library\Rserve\java\\**，主要需要的jar文件是**REngine.jar**和**Rserve.jar**
 * 你需要把这两个jars包含在你的Eclipse项目里，在**Package Explorer**里右键点击项目并选择**Build Path > Configure Build Path**
-![3](3.png)
+![3](3.png =800x600)
 
 * 在**Properties for RserveProject**窗口中选择**Libraries**选项卡
 ![4](4.png)
 
 * 选择**Add External JARs**按钮，浏览**<YOUR_R_HOME>\library\Rserve\java\**，选择**REngine.jar**和**Rserve.jar**文件，打开并确定
-* 现在你的Eclipse项目的结构将看起来像
+* 现在你的Eclipse项目的结构将看起来像  
 ![5](5.png)
 
 * 现在在RserveProject的**src**文件夹下创建一个叫**pkg**的包，在**pkg**下面创建一个类**Temp.java**
