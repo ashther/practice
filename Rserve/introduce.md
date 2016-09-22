@@ -23,7 +23,7 @@ Rserve()
 ```
 
 你的控制台将会看到：  
-![2](2.png)
+<img src="2.png"  style="width: 800px;"/>
 
 
 ### 步骤3 创建java客户端
@@ -33,7 +33,7 @@ Rserve()
 * Rserve提供了一些用在java程序中的客户端jars，这些jar文件已经包含在了安装好的Rserve包里
 * 我的这些jar文件在**D:\ProgramFiles\R\R-3.1.3\library\Rserve\java\**，你的在**<YOUR_R_HOME>\library\Rserve\java\\**，主要需要的jar文件是**REngine.jar**和**Rserve.jar**
 * 你需要把这两个jars包含在你的Eclipse项目里，在**Package Explorer**里右键点击项目并选择**Build Path > Configure Build Path**
-![3](3.png =800x600)
+<img src="3.png"  style="width: 400px;"/>
 
 * 在**Properties for RserveProject**窗口中选择**Libraries**选项卡
 ![4](4.png)
