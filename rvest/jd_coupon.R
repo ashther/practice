@@ -6,13 +6,14 @@ library(RCurl)
 library(RPushbullet)
 
 url_jd <- 'https://vip.jd.com/medal/coupon-60-1.html'
-title <- '中南博集天卷'
+title <- ''
 result <- NULL
 
 tryCatch({
   content <- url_jd %>% 
     getURL() %>% 
-    htmlParse(encoding = 'utf-8', asText = TRUE)
+    iconv(from = 'utf-8', to = 'gbk') %>% 
+    htmlParse(asText = TRUE)
   
   ids <- xpathSApply(content, '//div[@class="shop-name ellipsis"]', xmlValue) %>% 
     grepl(title, .) & !(
@@ -20,18 +21,18 @@ tryCatch({
         grepl('status-empty', .)
     )
   
-  if (length(ids) > 0) {
-    result <- xpathSApply(content, '//div[@class="name ellipsis"]',xmlValue) %>% 
-      extract(ids) %>% 
-      gsub('\\s', '', ., fixed = FALSE) %>% 
+  if (any(ids)) {
+    result <- xpathSApply(content, '//div[@class="name ellipsis"]',xmlValue) %>%
+      extract(ids) %>%
+      gsub('\\s', '', ., fixed = FALSE) %>%
       paste0(collapse = '\n')
   }
 }, error = function(e){
-  result <- e$message
+  result <- e
 })
 
 if (!is.null(result)) {
-  pbPost(type = 'link', title = title , body = result, url = url_jd,  
+  pbPost(type = 'link', title = title , body = result, url = url_jd,
          apikey = '')
 }
 
