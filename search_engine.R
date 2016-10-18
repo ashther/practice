@@ -65,7 +65,13 @@ matrixWeightScale <- function(doc) {
   }) %>% 
     t() %>% 
     set_colnames(colnames(tdmtx)) %>% 
-    scale(center = FALSE, scale = sqrt(colSums(.^2)))
+    apply(2, function(x) {
+      if (all(x == 0)) {
+        return(x)
+      }
+      scale(x, center = FALSE, scale = sqrt(sum(x^2)))
+    })
+    
   return(mtx_weighted_scaled)
 }
 
@@ -84,8 +90,12 @@ newDocWeightScale <- function(new_doc, tdmtx) {
     }
   }) %>% 
     as.matrix() %>% 
-    set_colnames(new_doc$id) %>% 
-    scale(center = FALSE, scale = sqrt(colSums(.^2)))
+    set_colnames(new_doc$id) 
+  
+  if (!all(temp == 0)) {
+    temp <- scale(temp, center = FALSE, scale = sqrt(colSums(temp^2)))
+  }
+    
   return(cbind(tdmtx, temp))
 }
 
