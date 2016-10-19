@@ -2,6 +2,10 @@ library(tm)
 library(SnowballC)
 library(magrittr)
 library(dplyr)
+library(jiebaR)
+
+seg <- worker(stop_word = '/home/r/Scripts/stop_words.utf8',  
+              user = '/home/r/Scripts/user.dict.utf8')
 
 doc1 <- "Stray cats are running all over the place. I see 10 a day!"
 doc2 <- "Cats are killers. They kill billions of animals a year."
@@ -11,7 +15,7 @@ doc5 <- "Buy Brand C cat food for your cat. Brand C makes healthy and happy cats
 doc6 <- "The Arnold Classic came to town this weekend. It reminds us to be healthy."
 doc7 <- "I have nothing to say. In summary, I have told you nothing."
 
-query <- "Healthy cat food"
+query <- "强壮的cat food"
 
 set.seed(2016)
 doc <- data.frame(
@@ -26,6 +30,12 @@ new_doc <- data.frame(
   stringsAsFactors = FALSE, row.names = NULL
 )
 
+chi_doc <- data.frame(
+  id = 12, 
+  content = enc2utf8('强壮牌猫粮，你的好猫粮，可以让ketty试一试。'), 
+  stringsAsFactors = FALSE, row.names = NULL
+)
+
 #  data 
 
 dfToCorpus <- function(df) {
@@ -33,16 +43,24 @@ dfToCorpus <- function(df) {
   VCorpus(DataframeSource(df), readerControl = list(reader = myReader))
 }
 
-corpusToMtx <- function(corpus) {
-  temp <- corpus %>% 
-    tm_map(removePunctuation) %>%
-    tm_map(removeNumbers) %>%
-    tm_map(content_transformer(tolower)) %>%
-    tm_map(removeWords, stopwords('english')) %>%
-    tm_map(stripWhitespace) %>%
-    tm_map(stemDocument)
+corpusToMtx <- function(corpus, seg) {
+  wordSeg <- content_transformer(
+    function(x) {
+      # if (!grepl('[\u4e00-\u9fa5]', x)) {
+      #   return(x)
+      # }
+      segment(x, seg)
+    }
+  )
   
-  result <- TermDocumentMatrix(temp) %>% 
+  result <- corpus %>% 
+    tm_map(removeNumbers) %>%
+    tm_map(content_transformer(tolower)) %>% 
+    tm_map(content_transformer(function(x) {
+      segment(x, seg)
+    })) %>% 
+    tm_map(stemDocument) %>% 
+    TermDocumentMatrix(control = list(wordLengths = c(1, Inf))) %>% 
     as.matrix()
   
   return(result)
@@ -55,10 +73,10 @@ termWeight <- function(tf_vec) {
   return(result)
 }
 
-matrixWeightScale <- function(doc) {
+matrixWeightScale <- function(doc, seg) {
   tdmtx <- doc %>% 
     dfToCorpus() %>% 
-    corpusToMtx()
+    corpusToMtx(seg)
   
   mtx_weighted_scaled <- apply(tdmtx, 1, function(x) {
     termWeight(x)
@@ -69,18 +87,19 @@ matrixWeightScale <- function(doc) {
       if (all(x == 0)) {
         return(x)
       }
-      scale(x, center = FALSE, scale = sqrt(sum(x^2)))
-    })
+      scale(x, center = FALSE, scale = sqrt(sum(x ^ 2)))
+    }) %>% 
+    set_rownames(rownames(tdmtx))
     
   return(mtx_weighted_scaled)
 }
 
-newDocWeightScale <- function(new_doc, tdmtx) {
+newDocWeightScale <- function(new_doc, tdmtx, seg) {
   
   term <- rownames(tdmtx)
   new_doc_mtx <- new_doc %>% 
     dfToCorpus() %>% 
-    corpusToMtx()
+    corpusToMtx(seg)
   
   temp <- sapply(rownames(tdmtx), function(x) {
     if (!x %in% rownames(new_doc_mtx)) {
@@ -93,13 +112,13 @@ newDocWeightScale <- function(new_doc, tdmtx) {
     set_colnames(new_doc$id) 
   
   if (!all(temp == 0)) {
-    temp <- scale(temp, center = FALSE, scale = sqrt(colSums(temp^2)))
+    temp <- scale(temp, center = FALSE, scale = sqrt(colSums(temp ^ 2)))
   }
     
   return(cbind(tdmtx, temp))
 }
 
-querySearch <- function(query, tdmtx, doc, k = 10, thr = 0) {
+querySearch <- function(query, tdmtx, seg, doc, k = 10, thr = 0) {
   stopifnot(is.numeric(k), 
             is.numeric(thr), 
             is.character(query), 
@@ -109,10 +128,11 @@ querySearch <- function(query, tdmtx, doc, k = 10, thr = 0) {
   
   query_mtx <- VectorSource(query) %>% 
     Corpus() %>% 
-    corpusToMtx()
+    corpusToMtx(seg)
   
   temp <- matrix(0, 1, nrow(tdmtx), dimnames = list('query', term))
-  temp[, term %in% rownames(query_mtx)] <- query_mtx[, 1]
+  temp[, term %in% rownames(query_mtx)] <- 
+    query_mtx[rownames(query_mtx) %in% term, 1]
   
   searched <- temp %*% tdmtx %>% 
     extract(1, ) %>% 
@@ -136,14 +156,20 @@ querySearch <- function(query, tdmtx, doc, k = 10, thr = 0) {
   return(slice(result, seq_len(k))$content)
 }
 
-# run daily
-tdmtx <- matrixWeightScale(doc)
-
-# # run whenever new doc created
-# new_tdmtx <- newDocWeightScale(new_doc, new_tdmtx) 
+# # run daily
+# tdmtx <- matrixWeightScale(doc, seg)
 # 
+# # # run whenever new doc created
+# new_tdmtx <- newDocWeightScale(new_doc, tdmtx, seg) 
+# # 
 # # run while searching
-# querySearch(query, new_tdmtx, rbind(doc, new_doc), 5, 0.2) 
+# querySearch(query, new_tdmtx, seg, rbind(doc, new_doc), 5, 0.1)
+# 
+# new_tdmtx <- newDocWeightScale(chi_doc, new_tdmtx, seg)
+# 
+# querySearch(query, new_tdmtx, seg, rbind(doc, new_doc, chi_doc), 5, 0.1)
+# 
+# tdmtx <- matrixWeightScale(rbind(doc, new_doc, chi_doc), seg)
 
 
 
