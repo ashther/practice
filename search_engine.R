@@ -171,7 +171,26 @@ querySearch <- function(query, tdmtx, seg, doc, k = 10, thr = 0) {
 # 
 # tdmtx <- matrixWeightScale(rbind(doc, new_doc, chi_doc), seg)
 
-
+# # use text2vec package
+# library(text2vec)
+# 
+# stop_words <- c("i", "me", "my", "myself", "we", "our", "ours", 
+#                 "ourselves", "you", "your", "yours")
+# 
+# it <- itoken(
+#   doc$content, 
+#   preprocessor = tolower, 
+#   tokenizer = word_tokenizer, 
+#   ids = doc$id
+# )
+# 
+# vcb <- create_vocabulary(it, 
+#                          ngram = c(1, 2), 
+#                          stopwords = stop_words) %>% 
+#   prune_vocabulary(term_count_min = 1)
+# vcb_vectorizer <- vocab_vectorizer(vcb)
+# 
+# dtm <- create_dtm(it, vcb_vectorizer)
 
 
 
