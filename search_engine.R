@@ -15,7 +15,8 @@ doc5 <- "Buy Brand C cat food for your cat. Brand C makes healthy and happy cats
 doc6 <- "The Arnold Classic came to town this weekend. It reminds us to be healthy."
 doc7 <- "I have nothing to say. In summary, I have told you nothing."
 
-query <- "强壮的cat food"
+query <- "healthy cat food"
+chi_query <- '强壮的cat food'
 
 set.seed(2016)
 doc <- data.frame(
@@ -36,7 +37,7 @@ chi_doc <- data.frame(
   stringsAsFactors = FALSE, row.names = NULL
 )
 
-#  data 
+# ===================================== tm 
 
 dfToCorpus <- function(df) {
   myReader <- readTabular(mapping = list(content = 'content', id = 'id'))
@@ -118,7 +119,7 @@ newDocWeightScale <- function(new_doc, tdmtx, seg) {
   return(cbind(tdmtx, temp))
 }
 
-querySearch <- function(query, tdmtx, seg, doc, k = 10, thr = 0) {
+querySearch <- function(query, tdmtx, seg, doc, k = 10L, thr = 0) {
   stopifnot(is.numeric(k), 
             is.numeric(thr), 
             is.character(query), 
@@ -171,39 +172,88 @@ querySearch <- function(query, tdmtx, seg, doc, k = 10, thr = 0) {
 # 
 # tdmtx <- matrixWeightScale(rbind(doc, new_doc, chi_doc), seg)
 
-# # use text2vec package
-# library(text2vec)
-# 
-# stop_words <- c("i", "me", "my", "myself", "we", "our", "ours", 
-#                 "ourselves", "you", "your", "yours")
-# 
-# it <- itoken(
-#   doc$content, 
-#   preprocessor = tolower, 
-#   tokenizer = word_tokenizer, 
-#   ids = doc$id
-# )
-# 
-# vcb <- create_vocabulary(it, 
-#                          ngram = c(1, 2), 
-#                          stopwords = stop_words) %>% 
-#   prune_vocabulary(term_count_min = 1)
-# vcb_vectorizer <- vocab_vectorizer(vcb)
-# 
-# dtm <- create_dtm(it, vcb_vectorizer)
+# ===================================== use text2vec package
+library(text2vec)
 
+stop_words <- c("i", "me", "my", "myself", "we", "our", "ours",
+                "ourselves", "you", "your", "yours")
 
+pre_func <- func
 
+it <- itoken(
+  doc$content,
+  preprocessor = tolower,
+  tokenizer = word_tokenizer,
+  ids = doc$id
+)
 
+vcb <- create_vocabulary(it,
+                         ngram = c(1, 2),
+                         stopwords = stop_words) %>%
+  prune_vocabulary(term_count_min = 1)
+vcb_vectorizer <- vocab_vectorizer(vcb)
 
+dtm <- create_dtm(it, vcb_vectorizer)
 
+# ===================================== benchmark
 
+microbenchmark::microbenchmark(
+  tm = {
+    VCorpus(DataframeSource(doc), readerControl = list(reader = myReader)) %>% 
+      tm_map(content_transformer(tolower)) %>% 
+      DocumentTermMatrix()
+  }, 
+  
+  text2vec = {
+    it <- itoken(
+      doc$content,
+      preprocessor = tolower,
+      tokenizer = word_tokenizer,
+      ids = doc$id, 
+      progressbar = FALSE
+    )
+    
+    vcb <- create_vocabulary(it) 
+    vcb_vectorizer <- vocab_vectorizer(vcb)
+    create_dtm(it, vcb_vectorizer)
+  }
+)
 
+# Unit: milliseconds
+#      expr        min         lq      mean     median         uq        max neval
+#        tm   4.118634   4.279641   4.56663   4.562923   4.770023   5.467505   100
+#  text2vec 166.909831 168.211648 170.69139 169.954393 171.375765 194.208945   100
 
+library(Rcpp)
+sourceCpp('mtxMultCPP.cpp')
+sourceCpp('mtxMultArmCPP.cpp')
+sourceCpp('mtxMultEigenCPP.cpp')
+sourceCpp('mtxMultParCPP.cpp')
+microbenchmark::microbenchmark(
+  mtxMultEigen(temp, tdmtx),
+  mtxMultCPP(temp, tdmtx),
+  mtxMultArm(temp, tdmtx),
+  mtxMultParCPP(temp, tdmtx), 
+  temp %*% tdmtx,
+  crossprod(t_temp, tdmtx))
 
+set.seed(2016)
+temp <- matrix(1e3, 1, 1e3)
+t_temp <- t(temp)
+test <- matrix(1e7, 1e3, 1e4)
 
+microbenchmark::microbenchmark(
+  mtxMultEigen(temp, test),
+  mtxMultCPP(temp, test),
+  mtxMultArm(temp, test),
+  mtxMultParCPP(temp, test), # 换成循环y的列
+  temp %*% test,
+  crossprod(t_temp, test), 
+  times = 10)
 
-
+system.time(mtxMultCPP(temp, test))
+system.time(mtxMultParCPP(temp, test))
+system.time(crossprod(t_temp, test))
 
 
 
