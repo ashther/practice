@@ -95,28 +95,36 @@ matrixWeightScale <- function(doc, seg) {
   return(mtx_weighted_scaled)
 }
 
-newDocWeightScale <- function(new_doc, tdmtx, seg) {
+newWeightScale <- function(mtx, tdmtx) {
+  stopifnot(is.matrix(mtx), 
+            ncol(mtx) == 1, 
+            is.matrix(tdmtx))
   
   term <- rownames(tdmtx)
+  temp <- matrix(0, nrow(tdmtx), ncol(mtx), 
+                 dimnames = list(term, colnames(mtx)))
+  
+  temp[term %in% rownames(mtx), ] <- 
+    (1 + log2(mtx[rownames(mtx) %in% term, ])) * 
+    log2(ncol(tdmtx) / rowSums(tdmtx[term %in% rownames(mtx), ] > 0))
+  
+  if (!all(temp == 0)) {
+    temp <- scale(temp, center = FALSE, scale = sqrt(sum(temp ^ 2)))
+  }
+  
+  return(temp)
+}
+
+newDocCombine <- function(new_doc, tdmtx, seg) {
+  
   new_doc_mtx <- new_doc %>% 
     dfToCorpus() %>% 
     corpusToMtx(seg)
   
-  temp <- sapply(rownames(tdmtx), function(x) {
-    if (!x %in% rownames(new_doc_mtx)) {
-      return(0)
-    } else {
-      (1 + log2(new_doc_mtx[x, ])) * log2(ncol(tdmtx) / sum(tdmtx[x, ] > 0))
-    }
-  }) %>% 
-    as.matrix() %>% 
-    set_colnames(new_doc$id) 
+  result <- newWeightScale(new_doc_mtx, tdmtx) %>% 
+    cbind(tdmtx, .)
   
-  if (!all(temp == 0)) {
-    temp <- scale(temp, center = FALSE, scale = sqrt(colSums(temp ^ 2)))
-  }
-    
-  return(cbind(tdmtx, temp))
+  return(result)
 }
 
 querySearch <- function(query, tdmtx, seg, doc, k = 10L, thr = 0) {
@@ -125,17 +133,11 @@ querySearch <- function(query, tdmtx, seg, doc, k = 10L, thr = 0) {
             is.character(query), 
             is.matrix(tdmtx))
   
-  term <- rownames(tdmtx)
-  
-  query_mtx <- VectorSource(query) %>% 
+  searched <- VectorSource(query) %>% 
     Corpus() %>% 
-    corpusToMtx(seg)
-  
-  temp <- matrix(0, 1, nrow(tdmtx), dimnames = list('query', term))
-  temp[, term %in% rownames(query_mtx)] <- 
-    query_mtx[rownames(query_mtx) %in% term, 1]
-  
-  searched <- temp %*% tdmtx %>% 
+    corpusToMtx(seg) %>% 
+    newWeightScale(tdmtx) %>% 
+    crossprod(tdmtx) %>% 
     extract(1, ) %>% 
     Filter(function(x)x >= thr, .)
   
@@ -161,12 +163,12 @@ querySearch <- function(query, tdmtx, seg, doc, k = 10L, thr = 0) {
 # tdmtx <- matrixWeightScale(doc, seg)
 # 
 # # # run whenever new doc created
-# new_tdmtx <- newDocWeightScale(new_doc, tdmtx, seg) 
+# new_tdmtx <- newDocCombine(new_doc, tdmtx, seg) 
 # # 
 # # run while searching
 # querySearch(query, new_tdmtx, seg, rbind(doc, new_doc), 5, 0.1)
 # 
-# new_tdmtx <- newDocWeightScale(chi_doc, new_tdmtx, seg)
+# new_tdmtx <- newDocCombine(chi_doc, new_tdmtx, seg)
 # 
 # querySearch(query, new_tdmtx, seg, rbind(doc, new_doc, chi_doc), 5, 0.1)
 # 
