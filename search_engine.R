@@ -231,31 +231,26 @@ sourceCpp('mtxMultCPP.cpp')
 sourceCpp('mtxMultArmCPP.cpp')
 sourceCpp('mtxMultEigenCPP.cpp')
 sourceCpp('mtxMultParCPP.cpp')
-microbenchmark::microbenchmark(
-  mtxMultEigen(temp, tdmtx),
-  mtxMultCPP(temp, tdmtx),
-  mtxMultArm(temp, tdmtx),
-  mtxMultParCPP(temp, tdmtx), 
-  temp %*% tdmtx,
-  crossprod(t_temp, tdmtx))
 
 set.seed(2016)
 temp <- matrix(1e3, 1, 1e3)
 t_temp <- t(temp)
-test <- matrix(1e7, 1e3, 1e4)
+test <- matrix(1e8, 1e3, 1e5)
 
 microbenchmark::microbenchmark(
-  mtxMultEigen(temp, test),
+  # mtxMultEigen(temp, test),
   mtxMultCPP(temp, test),
-  mtxMultArm(temp, test),
-  mtxMultParCPP(temp, test), # 换成循环y的列
-  temp %*% test,
+  # mtxMultArm(temp, test),
+  mtxMultParCPP(temp, test),
+  # temp %*% test,
   crossprod(t_temp, test), 
-  times = 10)
+  times = 100)
 
-system.time(mtxMultCPP(temp, test))
-system.time(mtxMultParCPP(temp, test))
-system.time(crossprod(t_temp, test))
+# Unit: milliseconds
+#                       expr      min       lq     mean   median       uq       max neval
+#     mtxMultCPP(temp, test) 92.32242 93.35680 94.61640 94.45920 95.45292  99.63526   100
+#  mtxMultParCPP(temp, test) 67.34526 67.66152 68.34254 68.04931 68.67653  71.57881   100
+#    crossprod(t_temp, test) 92.30385 93.55285 94.72991 94.56995 95.49165 100.31737   100
 
 
 
