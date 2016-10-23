@@ -6,7 +6,7 @@ library(RCurl)
 library(RPushbullet)
 
 url_jd <- 'https://vip.jd.com/medal/coupon-60-1.html'
-title <- ''
+title <- '京东自营'
 result <- NULL
 
 tryCatch({
@@ -33,6 +33,14 @@ tryCatch({
 
 if (!is.null(result)) {
   pbPost(type = 'link', title = title , body = result, url = url_jd,
-         apikey = '')
+         apikey = 'o.fW2venSCqeIjYIxbSkeQfgLJ8NjEyn19')
+}
+
+load(file = '/home/ashther/jd_coupon/new_day_check.rda')
+if (Sys.Date() > new_day_check) {
+  new_day_check <- Sys.Date()
+  save(new_day_check, file = '/home/ashther/jd_coupon/new_day_check.rda')
+  pbPost(type = 'note', title = 'hi morning' , body = 'what a wonderful day it will be', 
+         apikey = 'o.fW2venSCqeIjYIxbSkeQfgLJ8NjEyn19')
 }
 
