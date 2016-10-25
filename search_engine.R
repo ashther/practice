@@ -45,14 +45,14 @@ dfToCorpus <- function(df) {
 }
 
 corpusToMtx <- function(corpus, seg) {
-  wordSeg <- content_transformer(
-    function(x) {
-      # if (!grepl('[\u4e00-\u9fa5]', x)) {
-      #   return(x)
-      # }
-      segment(x, seg)
-    }
-  )
+  # wordSeg <- content_transformer(
+  #   function(x) {
+  #     # if (!grepl('[\u4e00-\u9fa5]', x)) {
+  #     #   return(x)
+  #     # }
+  #     segment(x, seg)
+  #   }
+  # )
   
   result <- corpus %>% 
     tm_map(removeNumbers) %>%
@@ -227,9 +227,9 @@ microbenchmark::microbenchmark(
 #  text2vec 166.909831 168.211648 170.69139 169.954393 171.375765 194.208945   100
 
 library(Rcpp)
-sourceCpp('mtxMultCPP.cpp')
-sourceCpp('mtxMultArmCPP.cpp')
-sourceCpp('mtxMultEigenCPP.cpp')
+# sourceCpp('mtxMultCPP.cpp')
+# sourceCpp('mtxMultArmCPP.cpp')
+# sourceCpp('mtxMultEigenCPP.cpp')
 sourceCpp('mtxMultParCPP.cpp')
 
 set.seed(2016)
@@ -244,7 +244,7 @@ microbenchmark::microbenchmark(
   mtxMultParCPP(temp, test),
   # temp %*% test,
   crossprod(t_temp, test), 
-  times = 100)
+  times = 10)
 
 # Unit: milliseconds
 #                       expr      min       lq     mean   median       uq       max neval
