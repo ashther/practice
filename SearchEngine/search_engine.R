@@ -70,7 +70,7 @@ corpusToMtx <- function(corpus, seg) {
 termWeight <- function(tf_vec) {
   result <- rep(0, length(tf_vec))
   result[tf_vec > 0] <- (1 + log2(tf_vec[tf_vec > 0])) * 
-                        log2(length(tf_vec) / sum(tf_vec > 0))
+    log2(length(tf_vec) / sum(tf_vec > 0))
   return(result)
 }
 
@@ -91,7 +91,7 @@ matrixWeightScale <- function(doc, seg) {
       scale(x, center = FALSE, scale = sqrt(sum(x ^ 2)))
     }) %>% 
     set_rownames(rownames(tdmtx))
-    
+  
   return(mtx_weighted_scaled)
 }
 
@@ -148,7 +148,7 @@ querySearch <- function(query, tdmtx, seg, doc, k = 10L, thr = 0) {
   result <- data.frame(
     id = names(searched)[
       order(searched, decreasing = TRUE)
-    ] %>% as.integer()
+      ] %>% as.integer()
   ) %>% 
     left_join(doc, 'id')
   
@@ -173,85 +173,6 @@ querySearch <- function(query, tdmtx, seg, doc, k = 10L, thr = 0) {
 # querySearch(query, new_tdmtx, seg, rbind(doc, new_doc, chi_doc), 5, 0.1)
 # 
 # tdmtx <- matrixWeightScale(rbind(doc, new_doc, chi_doc), seg)
-
-# ===================================== use text2vec package
-library(text2vec)
-
-stop_words <- c("i", "me", "my", "myself", "we", "our", "ours",
-                "ourselves", "you", "your", "yours")
-
-pre_func <- func
-
-it <- itoken(
-  doc$content,
-  preprocessor = tolower,
-  tokenizer = word_tokenizer,
-  ids = doc$id
-)
-
-vcb <- create_vocabulary(it,
-                         ngram = c(1, 2),
-                         stopwords = stop_words) %>%
-  prune_vocabulary(term_count_min = 1)
-vcb_vectorizer <- vocab_vectorizer(vcb)
-
-dtm <- create_dtm(it, vcb_vectorizer)
-
-# ===================================== benchmark
-
-microbenchmark::microbenchmark(
-  tm = {
-    VCorpus(DataframeSource(doc), readerControl = list(reader = myReader)) %>% 
-      tm_map(content_transformer(tolower)) %>% 
-      DocumentTermMatrix()
-  }, 
-  
-  text2vec = {
-    it <- itoken(
-      doc$content,
-      preprocessor = tolower,
-      tokenizer = word_tokenizer,
-      ids = doc$id, 
-      progressbar = FALSE
-    )
-    
-    vcb <- create_vocabulary(it) 
-    vcb_vectorizer <- vocab_vectorizer(vcb)
-    create_dtm(it, vcb_vectorizer)
-  }
-)
-
-# Unit: milliseconds
-#      expr        min         lq      mean     median         uq        max neval
-#        tm   4.118634   4.279641   4.56663   4.562923   4.770023   5.467505   100
-#  text2vec 166.909831 168.211648 170.69139 169.954393 171.375765 194.208945   100
-
-library(Rcpp)
-# sourceCpp('mtxMultCPP.cpp')
-# sourceCpp('mtxMultArmCPP.cpp')
-# sourceCpp('mtxMultEigenCPP.cpp')
-sourceCpp('mtxMultParCPP.cpp')
-
-set.seed(2016)
-temp <- matrix(1e3, 1, 1e3)
-t_temp <- t(temp)
-test <- matrix(1e8, 1e3, 1e5)
-
-microbenchmark::microbenchmark(
-  # mtxMultEigen(temp, test),
-  mtxMultCPP(temp, test),
-  # mtxMultArm(temp, test),
-  mtxMultParCPP(temp, test),
-  # temp %*% test,
-  crossprod(t_temp, test), 
-  times = 10)
-
-# Unit: milliseconds
-#                       expr      min       lq     mean   median       uq       max neval
-#     mtxMultCPP(temp, test) 92.32242 93.35680 94.61640 94.45920 95.45292  99.63526   100
-#  mtxMultParCPP(temp, test) 67.34526 67.66152 68.34254 68.04931 68.67653  71.57881   100
-#    crossprod(t_temp, test) 92.30385 93.55285 94.72991 94.56995 95.49165 100.31737   100
-
 
 
 
