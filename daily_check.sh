@@ -1,3 +1,3 @@
 #!/bin/bash
 
-grep "Nov  3" ~/recommend/attence/log|awk -f ~/Scripts/awkTest.awk
+grep "Nov  4" ~/recommend/attence/log|~/Scripts/awkTest.awk

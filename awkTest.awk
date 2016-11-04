@@ -1,4 +1,4 @@
-#awkTest.awk
+#!/bin/awk -f
 
 BEGIN {
   FS="  "
@@ -14,5 +14,5 @@ END {
   print "total lines: "NR
   print "last line: "$1, $2
   printf("cluster caculation: %d, data modify: %d, failed: %d\n", 
-          cluster_count++, modify_count++, fail_count++)
+          cluster_count, modify_count, fail_count)
 }
