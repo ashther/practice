@@ -17,7 +17,7 @@ getEmotionResponse <- function(img.path, key){
   )
 }
 
-face_key <- '3b891b40472240b89f1cf6202cf0cbbb'
+face_key <- ''
 
 getSim <- function(faceId, faceIds, face_key) {
   result <- content(
