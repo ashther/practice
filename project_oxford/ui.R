@@ -48,7 +48,7 @@ shinyUI(fluidPage(
       
       fluidRow(
         column(6, imageOutput('img_0_output')), 
-        column(6, actionButton('emotion_btn', 'get emotion'), tableOutput('img_0_emotion'))
+        column(6, uiOutput('emotion_btn_ui'), tableOutput('img_0_emotion'))
       ),
       
       fluidRow(

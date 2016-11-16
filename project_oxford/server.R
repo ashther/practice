@@ -33,19 +33,35 @@ shinyServer(function(input, output, session) {
     )
   }
   
-  output$img_0_output <- renderImageFunc('img_0')
-  output$img_1_output <- renderImageFunc('img_1')
-  output$img_2_output <- renderImageFunc('img_2')
-  output$img_3_output <- renderImageFunc('img_3')
+  observe({
+    if (!is.null(input$img_0)) {
+      output$img_0_output <- renderImageFunc('img_0')
+      output$emotion_btn_ui <- renderUI({
+        actionButton('emotion_btn', 'get emotion')
+      })
+    }
+    
+    if (!is.null(input$img_1)) {
+      output$img_1_output <- renderImageFunc('img_1')
+    }
+    
+    if (!is.null(input$img_2)) {
+      output$img_2_output <- renderImageFunc('img_2')
+    }
+    
+    if (!is.null(input$img_3)) {
+      output$img_3_output <- renderImageFunc('img_3')
+    }
+  })
   
   # ========== render emotion table
   
   observeEvent(input$emotion_btn, {
     img_0_emotion <- reactive(
-      if (!is.null(input$img_0)) {
+      if (!is.null(isolate(input$img_0))) {
         withProgress(message = 'fetching emotion...', value = 0, {
           setProgress(0.5)
-          return(getEmotionResponse(input$img_0$datapath, emotion_key))
+          return(getEmotionResponse(isolate(input$img_0$datapath), emotion_key))
           setProgress(1)
         })
       }

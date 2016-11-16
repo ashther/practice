@@ -1,8 +1,8 @@
 library(httr)
 library(magrittr)
 
-emotion_key <- jsonlite::fromJSON('project_oxford/config.json')$emotion_key
-face_key <- jsonlite::fromJSON('project_oxford/config.json')$face_key
+emotion_key <- jsonlite::fromJSON('config.json')$emotion_key
+face_key <- jsonlite::fromJSON('config.json')$face_key
 
 renderImageFunc <- function(img) {
   renderImage({
