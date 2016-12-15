@@ -1,3 +1,4 @@
+```{r}
 library(tidyverse)
 library(ggthemes)
 library(ggthemr)
@@ -44,3 +45,6 @@ blankplot <- ggplot() +
 
 grid.arrange(xdensity, blankplot, xyscatter, ydensity, 
              nrow = 2, widths = c(4, 2), heights = c(2, 4))
+```
+
+![](ggplot2.png)
