@@ -48,3 +48,27 @@ grid.arrange(xdensity, blankplot, xyscatter, ydensity,
 ```
 
 ![](ggplot2.png)
+
+```{r}
+# download from http://www.gadm.org/country
+chn_adm <- read_rds('CHN_adm1.rds')
+
+province <- data.frame(NAME_1 = chn_adm@data$NAME_1, 
+                       value = rnorm(31), 
+                       stringsAsFactors = FALSE)
+border <- fortify(chn_adm)
+border$id <- as.integer(border$id)
+
+df <- left_join(border, chn_adm@data, by = c('id' = 'OBJECTID'))
+
+df <- left_join(df, province)
+
+ggplot(df, aes(long, lat, group = group)) + 
+  geom_polygon(color = 'white', aes(fill = value)) + 
+  theme(panel.background = element_blank(), 
+        axis.ticks = element_blank(), 
+        axis.text = element_blank()) + 
+  xlab('') + 
+  ylab('')
+```
+![](map.png)
