@@ -12,34 +12,49 @@ seg <- worker(bylines = TRUE, stop_word = 'lda/stop_words.utf8')
 
 documents <- readClipboard() %>% 
   segment(seg)
+ind <- sapply(documents, function(x)!identical(character(0), x))
+documents <- documents[ind]
 
+# words <- unlist(documents) %>% 
+#   table() %>% 
+#   as.data.frame(stringsAsFactors = FALSE) %>% 
+#   set_colnames(c('word', 'freq'))
 words <- unlist(documents) %>% 
-  table() %>% 
-  as.data.frame(stringsAsFactors = FALSE) %>% 
-  set_colnames(c('word', 'freq'))
+  table()
 
+wordsIndexFind <- function(x, words) {
+  which(x == names(words)) - 1
+}
+
+# getTerms <- function(x, words) {
+#   result <- which(x %in% words$word) %>% 
+#     #which(words$word %in% x) %>%
+#     table() %>% 
+#     as.data.frame() %>% 
+#     t() %>% 
+#     as.integer() %>% 
+#     matrix(nrow = 2)
+#   result[1, ] <- result[1, ] - 1L
+#   return(result)
+# }
 getTerms <- function(x, words) {
-  result <- which(words$word %in% x) %>%
-    table() %>% 
-    as.data.frame() %>% 
-    t() %>% 
-    as.integer() %>% 
-    matrix(nrow = 2)
-  result[1, ] <- result[1, ] - 1L
-  return(result)
+  temp <- table(x)
+  freq <- unname(temp)
+  term <- unname(sapply(names(temp), wordsIndexFind, words = words))
+  return(matrix(as.integer(c(term, freq)), nrow = 2, byrow = TRUE))
 }
 
 documentsMtx <- lapply(documents, getTerms, words = words)
 
 set.seed(357)
 fit <- lda.collapsed.gibbs.sampler(
-  documents = documentsMtx, K = 3, vocab = words$word,
+  documents = documentsMtx, K = 3, vocab = names(words),
   num.iterations = 5000, alpha = 0.1, eta = 0.02,
   initial = NULL, burnin = 0, compute.log.likelihood = TRUE)
 
 theta <- t(apply(fit$document_sums + 0.1, 2, function(x) x/sum(x)))  #文档—主题分布矩阵
 phi <- t(apply(t(fit$topics) + 0.02, 2, function(x) x/sum(x)))  #主题-词语分布矩阵
-term.frequency <- words$freq   #词频
+term.frequency <- unname(words)   #词频
 doc.length <- sapply(documentsMtx, function(x) sum(x[2, ])) #每篇文章的长度，即有多少个词
 
 require(LDAvis)
