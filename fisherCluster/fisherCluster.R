@@ -1,6 +1,16 @@
 
 library(magrittr)
 
+getMtxValue <- function(mtx, i, j) {
+  i <- as.character(i)
+  j <- as.character(j)
+  if (!i %in% rownames(mtx) | !j %in% colnames(mtx)) {
+    return(0)
+  } else {
+    return(mtx[i, j])
+  }
+}
+
 # seq_data <- c(9.3, 1.8, 1.9, 1.7, 1.5, 1.3, 1.4, 2.0, 1.9, 2.3, 2.1)
 dijCaculate <- function(seq_data, i, j) {
   avg <- mean(seq_data[i:j], na.rm = TRUE)
@@ -8,12 +18,17 @@ dijCaculate <- function(seq_data, i, j) {
 }
 
 dMtxCreate <- function(seq_data) {
+  require(pbapply)
   len <- length(seq_data) - 1
   dMtx <- matrix(0, len, len, dimnames = list(2:(len + 1), seq_len(len)))
+  
+  pb <- startpb(0, len)
+  on.exit(closepb(pb))
   for (k in seq_len(len)) {
     for (n in k:len) {
       dMtx[n, k] <- dijCaculate(seq_data, k, n + 1)
     }
+    setpb(pb, k)
   }
   return(dMtx)
 }
@@ -42,16 +57,54 @@ minLossSplit <- function(dMtx, n, k) {
   return(list(value = min(result), idx = j_seq[which.min(result)]))
 }
 
+minLossSplitTemp <- function(dMtx, min_loss_mtx, n, k) {
+  j_seq <- seq(k, n)
+  if (k == 2L) {
+    result <- sapply(j_seq, function(j) {
+      if (1 == (j - 1)) {
+        return(dMtx[as.character(n), as.character(j)])
+      } else if (n == j) {
+        return(dMtx[as.character(j - 1), '1'])
+      } else {
+        return(dMtx[as.character(j - 1), '1'] + dMtx[as.character(n), as.character(j)])
+      }
+    })
+  } else {
+    result <- sapply(j_seq, function(j) {
+      if (j == n) {
+        return(getMtxValue(min_loss_mtx, j - 1, k - 1))
+      } else {
+        return(getMtxValue(min_loss_mtx, j - 1, k - 1) + 
+                 dMtx[as.character(n), as.character(j)])
+      }
+    })
+  }
+  return(list(value = min(result), idx = j_seq[which.min(result)]))
+}
+
 lossMtxCreate <- function(dMtx) {
+  require(pbapply)
   len <- nrow(dMtx) - 1
   min_loss_mtx <- matrix(0, len, len, dimnames = list(rownames(dMtx)[-1], colnames(dMtx)[-1]))
   min_loss_idx <- min_loss_mtx
+  
+  pb <- startpb(0, len)
+  on.exit(closepb(pb))
   for(k in colnames(min_loss_mtx)) {
     for(n in rownames(min_loss_mtx)[which(colnames(min_loss_mtx) == k):length(rownames(min_loss_mtx))]) {
-      min_loss <- minLossSplit(dMtx, as.integer(n), as.integer(k))
+      # min_loss <- minLossSplit(dMtx, as.integer(n), as.integer(k))
+      # min_loss_mtx[n, k] <- min_loss$value
+      # min_loss_idx[n, k] <- min_loss$idx
+      # 
+      # min_loss <- minLossSplitCpp(dMtx, as.integer(n), as.integer(k))
+      # min_loss_mtx[n, k] <- min(min_loss)
+      # min_loss_idx[n, k] <- which.min(min_loss) + which(colnames(min_loss_mtx) == k)
+      
+      min_loss <- minLossSplitTemp(dMtx, min_loss_mtx, as.integer(n), as.integer(k))
       min_loss_mtx[n, k] <- min_loss$value
       min_loss_idx[n, k] <- min_loss$idx
     }
+    setpb(pb, which(k == colnames(min_loss_mtx)))
   }
   return(list(value = min_loss_mtx, idx = min_loss_idx))
 }
