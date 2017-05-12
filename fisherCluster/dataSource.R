@@ -5,7 +5,7 @@ library(Rcpp)
 source('fisherCluster.R')
 sourceCpp('minLossSplitCpp.cpp')
 
-timeToSeq <- function(time_vec, start_time) {
+timeToSeq <- function(time_vec, start_time, by) {
   # time_seq <- vector('integer', diff(time_range))
   # names(time_seq) <- seq_len(diff(time_range))
   # start_time <- as.POSIXct(format(time_vec[1], format = '%Y-%m-%d'))
@@ -13,7 +13,7 @@ timeToSeq <- function(time_vec, start_time) {
   # time_seq[names(value)] <- value
   # return(time_seq)
   start_time <- as.POSIXct(paste(format(time_vec[1], format = '%Y-%m-%d'), start_time))
-  value <- as.integer(floor(difftime(time_vec, start_time, units = 'mins')))
+  value <- floor(as.numeric(difftime(time_vec, start_time, units = 'mins'))/by)
   return(value)
 }
 
@@ -66,10 +66,10 @@ df_0427 <- filter(df, lubridate::date(pfr_upload_time) == '2017-04-27') %>%
          time = pfr_upload_time, weekdays) %>% 
   arrange(time)
 
-df_0427$time = timeToSeq(df_0427$time, '04:00:00')
+df_0427$time = timeToSeq(df_0427$time, '04:00:00', by = 5)
 
 pf <- df_0427 %>% 
   group_by(time) %>% 
   summarise(n = sum(on)) %>% 
-  left_join(data.frame(time = seq_len(1200)), .)
+  left_join(data.frame(time = seq_len((24 - 4) * (60 / 5))), .)
 pf$n[is.na(pf$n)] <- 0
