@@ -1,9 +1,12 @@
 
 library(magrittr)
 library(dplyr)
+library(ggplot2)
 library(Rcpp)
 source('fisherCluster.R')
 sourceCpp('minLossSplitCpp.cpp')
+source('clusterPlot.R')
+source('tsForecast.R')
 
 timeToSeq <- function(time_vec, start_time, by) {
   # time_seq <- vector('integer', diff(time_range))
@@ -12,7 +15,7 @@ timeToSeq <- function(time_vec, start_time, by) {
   # value <- table(floor(difftime(time_vec, start_time, units = 'mins')) - time_range[1])
   # time_seq[names(value)] <- value
   # return(time_seq)
-  start_time <- as.POSIXct(paste(format(time_vec[1], format = '%Y-%m-%d'), start_time))
+  start_time <- as.POSIXct(paste(format(time_vec, format = '%Y-%m-%d'), start_time))
   value <- floor(as.numeric(difftime(time_vec, start_time, units = 'mins'))/by)
   return(value)
 }
@@ -59,6 +62,9 @@ df$pfr_upload_time <- as.POSIXct(df$pfr_upload_time)
 #Sys.setlocale("LC_TIME", "C")
 df$weekdays <- weekdays(df$pfr_upload_time, abbreviate = TRUE)
 
+###############################################################################
+# 2017-04-27
+###############################################################################
 df_0427 <- filter(df, lubridate::date(pfr_upload_time) == '2017-04-27') %>% 
   select(-pfr_line_uuid, -pfr_line_station_uuid, -pfr_station_uuid,  
          pfr_line_type, seq = pfr_station_seq, on = pfr_get_on_number, 
@@ -73,3 +79,77 @@ pf <- df_0427 %>%
   summarise(n = sum(on)) %>% 
   left_join(data.frame(time = seq_len((24 - 4) * (60 / 5))), .)
 pf$n[is.na(pf$n)] <- 0
+
+###############################################################################
+# weekdays
+###############################################################################
+holidays <- c('02-01', '02-02', '04-02', '04-03', '04-04') %>% 
+  paste0('2017-', .)
+work_weekend <- c('02-04', '04-01') %>% 
+  paste0('2017-', .)
+around_holiday <- c('02-03', '04-01', '04-05', '04-30') %>% 
+  paste0('2017-', .)
+df_temp <- filter(df, !lubridate::date(pfr_upload_time) %in% 
+                    as.Date(c(holidays, work_weekend, before_holiday))) %>% 
+  select(-pfr_line_uuid, -pfr_line_station_uuid, -pfr_station_uuid,  
+         -pfr_line_type, -pfr_station_seq, -pfr_get_off_number, -prf_get_person_count, 
+         on = pfr_get_on_number, 
+         time = pfr_upload_time, weekdays) %>% 
+  mutate(date = lubridate::date(time)) %>% 
+  arrange(date)
+df_temp$time <- timeToSeq(df_temp$time, '04:00:00', by = 5)
+
+# get passenger flow on specific weekday except holiday-work_weekend-day
+pfWeekDayFilter <- function(df_temp, weekday) {
+  df_weekday <- filter(df_temp, weekdays == weekday)
+  result <- lapply(unique(df_weekday$date), function(d) {
+    temp <- df_weekday %>% 
+      filter(date == d) %>% 
+      group_by(time) %>% 
+      summarise(n = sum(on)) %>% 
+      left_join(data.frame(time = seq_len(240)), ., by = 'time')
+    temp$n[is.na(temp$n)] <- 0
+    temp
+  })
+  names(result) <- unique(df_weekday$date)
+  return(result)
+}
+pf_mon <- pfWeekDayFilter(df_temp, 'Mon')
+pf_tue <- pfWeekDayFilter(df_temp, 'Tue')
+pf_wed <- pfWeekDayFilter(df_temp, 'Wed')
+pf_thu <- pfWeekDayFilter(df_temp, 'Thu')
+pf_fri <- pfWeekDayFilter(df_temp, 'Fri')
+pf_sat <- pfWeekDayFilter(df_temp, 'Sat')
+pf_sun <- pfWeekDayFilter(df_temp, 'Sun')
+rm(df_temp)
+
+pfWeekDayForPlot <- function(pf, min_date, max_date) {
+  wd <- weekdays(as.Date(names(pf)), abbreviate = TRUE)[1]
+  time_seq <- seq(as.Date(min_date), as.Date(max_date), by = 'day')
+  time_seq <- time_seq[weekdays(time_seq, abbreviate = TRUE) == wd]
+  
+  lapply(time_seq, function(x) {
+    if (as.character(x) %in% names(pf)) {
+      temp <- pf[[as.character(x)]]
+      temp <- stats::filter(temp$n, rep(1/25, 25)) %>% na.omit() %>% as.numeric()
+      data.frame(time = seq_along(temp), 
+                 n = temp, 
+                 date = x, 
+                 stringsAsFactors = FALSE) %>% 
+        return()
+    } else {
+      return(data.frame(time = NA, n = NA, date = x, stringsAsFactors = FALSE))
+    }
+  }) %>% 
+    do.call(rbind, .)
+}
+pf_for_plot <- pfWeekDayForPlot(pf_mon, '2017-02-01', '2017-04-30')
+
+###############################################################################
+# timeSeries forecast
+###############################################################################
+
+# df_fri <- data.frame(do.call('rbind', pf_fri), 
+#                      date = rep(names(pf_fri), each = 240), 
+#                      stringsAsFactors = FALSE, row.names = NULL)
+
