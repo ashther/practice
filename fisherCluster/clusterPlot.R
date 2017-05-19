@@ -33,12 +33,15 @@ lossSeqPlot <- function(lossMtx, k_seq) {
 }
 
 # get mutiple plot of different time series which are same weekdays
-multiWeekDayPlot <- function(pf_for_plot, save = FALSE) {
+multiWeekDayPlot <- function(pf, min_date = '2017-02-01', 
+                             max_date = '2017-04-30', save = FALSE) {
   require(ggplot2)
   require(magrittr)
-  label <- weekdays(pf_for_plot$date[1], TRUE)
-  pf_without_date <- pf_for_plot[, -3]
-  p <- pf_for_plot %>% 
+  df <- pfToDf(pf, min_date, max_date)
+  
+  label <- weekdays(df$date[1], TRUE)
+  pf_without_date <- df[, -3]
+  p <- df %>% 
     ggplot(aes(x = time, y = n)) + 
     geom_line(aes(group = date), col = 'red') + 
     geom_line(data = pf_without_date, col = 'grey', alpha = 0.5) + 
@@ -52,19 +55,3 @@ multiWeekDayPlot <- function(pf_for_plot, save = FALSE) {
   }
 }
 
-hwForecastPlot <- function(pf, min_date = '2017-02-01', max_date = '2017-04-30') {
-  df <- pf %>% 
-    pfWeekDayForPlot(min_date, max_date) %>% 
-    filter(!is.na(n))
-  predict_date <- names(pf)[length(pf)]
-  n_fore <- hwForecast(df, predict_date)
-  
-  Sys.setlocale("LC_TIME", "C")
-  plot(df[df$date == predict_date, 'n'], 
-       type = 'l', 
-       ylab = 'n', 
-       main = sprintf('%s %s', predict_date, weekdays(as.Date(predict_date))))
-  points(n_fore, col = 'red')
-  sse <- sum((df[df$date == predict_date, 'n'] - n_fore) ^ 2)
-  text(x = 100, y = 50, labels = sprintf('sse: %s', round(sse, 2)))
-}
