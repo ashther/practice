@@ -90,7 +90,7 @@ work_weekend <- c('02-04', '04-01') %>%
 around_holiday <- c('02-03', '04-01', '04-05', '04-30') %>% 
   paste0('2017-', .)
 df_temp <- filter(df, !lubridate::date(pfr_upload_time) %in% 
-                    as.Date(c(holidays, work_weekend, before_holiday))) %>% 
+                    as.Date(c(holidays, work_weekend, around_holiday))) %>% 
   select(-pfr_line_uuid, -pfr_line_station_uuid, -pfr_station_uuid,  
          -pfr_line_type, -pfr_station_seq, -pfr_get_off_number, -prf_get_person_count, 
          on = pfr_get_on_number, 
@@ -121,35 +121,24 @@ pf_thu <- pfWeekDayFilter(df_temp, 'Thu')
 pf_fri <- pfWeekDayFilter(df_temp, 'Fri')
 pf_sat <- pfWeekDayFilter(df_temp, 'Sat')
 pf_sun <- pfWeekDayFilter(df_temp, 'Sun')
-rm(df_temp)
-
-pfWeekDayForPlot <- function(pf, min_date, max_date) {
-  wd <- weekdays(as.Date(names(pf)), abbreviate = TRUE)[1]
-  time_seq <- seq(as.Date(min_date), as.Date(max_date), by = 'day')
-  time_seq <- time_seq[weekdays(time_seq, abbreviate = TRUE) == wd]
-  
-  lapply(time_seq, function(x) {
-    if (as.character(x) %in% names(pf)) {
-      temp <- pf[[as.character(x)]]
-      temp <- stats::filter(temp$n, rep(1/25, 25)) %>% na.omit() %>% as.numeric()
-      data.frame(time = seq_along(temp), 
-                 n = temp, 
-                 date = x, 
-                 stringsAsFactors = FALSE) %>% 
-        return()
-    } else {
-      return(data.frame(time = NA, n = NA, date = x, stringsAsFactors = FALSE))
-    }
-  }) %>% 
-    do.call(rbind, .)
-}
-pf_for_plot <- pfWeekDayForPlot(pf_mon, '2017-02-01', '2017-04-30')
 
 ###############################################################################
-# timeSeries forecast
+# weekdays, holidays, work_weekend and around_holiday
 ###############################################################################
 
-# df_fri <- data.frame(do.call('rbind', pf_fri), 
-#                      date = rep(names(pf_fri), each = 240), 
-#                      stringsAsFactors = FALSE, row.names = NULL)
+df_full <- select(df, -pfr_uuid, -pfr_line_name,  
+                  -pfr_line_uuid, -pfr_line_station_uuid, -pfr_station_uuid,  
+         -pfr_line_type, -pfr_station_seq, -pfr_get_off_number, -prf_get_person_count, 
+         on = pfr_get_on_number, 
+         time = pfr_upload_time, weekdays) %>% 
+  mutate(date = lubridate::date(time)) %>% 
+  arrange(date)
+df_full$time <- timeToSeq(df_full$time, '04:00:00', by = 5)
 
+pf_mon_full <- pfWeekDayFilter(df_full, 'Mon')
+pf_tue_full <- pfWeekDayFilter(df_full, 'Tue')
+pf_wed_full <- pfWeekDayFilter(df_full, 'Wed')
+pf_thu_full <- pfWeekDayFilter(df_full, 'Thu')
+pf_fri_full <- pfWeekDayFilter(df_full, 'Fri')
+pf_sat_full <- pfWeekDayFilter(df_full, 'Sat')
+pf_sun_full <- pfWeekDayFilter(df_full, 'Sun')
