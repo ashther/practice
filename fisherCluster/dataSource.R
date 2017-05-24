@@ -90,7 +90,7 @@ work_weekend <- c('02-04', '04-01') %>%
 around_holiday <- c('02-03', '04-01', '04-05', '04-30') %>% 
   paste0('2017-', .)
 df_temp <- filter(df, !lubridate::date(pfr_upload_time) %in% 
-                    as.Date(c(holidays, work_weekend, around_holiday))) %>% 
+                    as.Date(c(holidays, work_weekend))) %>% 
   select(-pfr_line_uuid, -pfr_line_station_uuid, -pfr_station_uuid,  
          -pfr_line_type, -pfr_station_seq, -pfr_get_off_number, -prf_get_person_count, 
          on = pfr_get_on_number, 
