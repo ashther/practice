@@ -1,4 +1,12 @@
 
+suppressWarnings2 <- function(expr, regex = character()) {
+  withCallingHandlers(expr, warning = function(w) {
+    if (any(grepl(regex, w))) {
+      invokeRestart('muffleWarning')
+    }
+  })
+}
+
 ###############################################################################
 # get top k shortest path based on mat
 ###############################################################################
@@ -45,7 +53,10 @@ spFindTopKResume <- function(mat, from, to, k, result = list(), variants = list(
     # plot(g, edge.label = E(g)$weight)
     spd <- shortest.paths(g, from, to, mode = 'out', algorithm = 'dijkstra')
     if (!is.infinite(spd)) {
-      k1 <- get.shortest.paths(g, from, to, mode = 'out', output = 'both')
+      k1 <- suppressWarnings2(
+        get.shortest.paths(g, from, to, mode = 'out', output = 'both'), 
+        regex = "Couldn't reach some vertices"
+      )
       result <- list(list(g = g, 
                           vert = k1$vpath, 
                           path = k1$epath, 
@@ -77,7 +88,10 @@ variantCaculate <- function(variants, variant, from, to) {
   g <- variant$g
   for (j in unlist(variant$path)) {
     new_g <- delete.edges(g, j)
-    sp <- get.shortest.paths(new_g, from, to, mode = 'out', output = 'both')
+    sp <- suppressWarnings2(
+      get.shortest.paths(new_g, from, to, mode = 'out', output = 'both'), 
+      regex = "Couldn't reach some vertices"
+    )
     spd <- shortest.paths(new_g, from, to, mode = 'out', algorithm = 'dijkstra')
     if (!is.infinite(spd)) {
       if (!spContains(variants, sp)) {
@@ -120,18 +134,24 @@ spFilter <- function(sp, n, matTrans) {
 }
 
 # sp <- spFilter()
-spSort <- function(sp, matTime, matTrans) {
+spSort <- function(sp, matTime, matTrans, by = c('tran', 'time')) {
   time_tran <- t(sapply(sp, function(x) {
     vec <- x$vert
     time <- sum(mtxValueGet(vec, matTime))
-    tran <- length(vec) - sum(mtxValueGet(vec[-c(1, length(vec))], matTrans)) - 2
+    tran <- length(vec) - sum(mtxValueGet(vec, matTrans)) - 2
+    # tran <- length(vec) - sum(mtxValueGet(vec[-c(1, length(vec))], matTrans)) - 2
     return(c(time = time, tran = tran))
   }))
-  orders <- order(time_tran[, 'tran'], time_tran[, 'time'])
+  orders <- order(time_tran[, by[1]], time_tran[, by[2]])
   result <- lapply(seq_along(sp), function(x) {
-    list(vert = sp[[x]]$vert, 
-         tran = time_tran[x, 'tran'], 
-         time = time_tran[x, 'time'])
-  })
-  return(result[orders])
+    c(paste0(sp[[x]]$vert, collapse = ','),
+      time_tran[x, 'tran'],
+      time_tran[x, 'time'])
+  }) %>% 
+    do.call(rbind, .) %>% 
+    as.data.frame(stringsAsFactors = FALSE) %>% 
+    set_colnames(c('sp', 'tran', 'time'))
+  result$tran <- as.integer(result$tran)
+  result$time <- as.numeric(result$time)
+  return(result[orders, ])
 }
