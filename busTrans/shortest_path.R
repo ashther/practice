@@ -84,26 +84,24 @@ spFindTopKResume <- function(mat, from, to, k, result = list(), variants = list(
   return(list(result = result, variants = variants))
 }
 
-variantCaculate <- memoise(
-  function(variants, variant, from, to) {
-    g <- variant$g
-    for (j in unlist(variant$path)) {
-      new_g <- delete.edges(g, j)
-      sp <- suppressWarnings2(
-        get.shortest.paths(new_g, from, to, mode = 'out', output = 'both'), 
-        regex = "Couldn't reach some vertices"
-      )
-      spd <- shortest.paths(new_g, from, to, mode = 'out', algorithm = 'dijkstra')
-      if (!is.infinite(spd)) {
-        if (!spContains(variants, sp)) {
-          variants[[length(variants) + 1]] <- 
-            list(g = new_g, vert = sp$vpath, path = sp$epath, dist = spd)
-        }
+variantCaculate <- memoise::memoise(function(variants, variant, from, to) {
+  g <- variant$g
+  for (j in unlist(variant$path)) {
+    new_g <- delete.edges(g, j)
+    sp <- suppressWarnings2(
+      get.shortest.paths(new_g, from, to, mode = 'out', output = 'both'), 
+      regex = "Couldn't reach some vertices"
+    )
+    spd <- shortest.paths(new_g, from, to, mode = 'out', algorithm = 'dijkstra')
+    if (!is.infinite(spd)) {
+      if (!spContains(variants, sp)) {
+        variants[[length(variants) + 1]] <- 
+          list(g = new_g, vert = sp$vpath, path = sp$epath, dist = spd)
       }
     }
-    return(variants)
   }
-)
+  return(variants)
+})
 
 spContains <- function(variants, sp) {
   any(unlist(lapply(variants, function(x)identical(unlist(x$vert), unlist(sp$vpath)))))
@@ -194,19 +192,38 @@ start <- Sys.time()
 sp <- spTranslate(sp, dfLines)
 cat(Sys.time() - start)
 
-pbapply::pblapply(unique(dfLines$station), FUN = function(x) {
-  lapply(unique(dfLines$station), function(y) {
-    if (x == y) {
-      return(NA)
-    }
-    sp <- spFindTopKResume(mat, x, y, 10)
-    sp <- spFilter(sp, 2, matTrans)
-    if (length(sp) <= 0) {
-      return(NA)
-    }
-    sp <- spSort(sp, matTime, matTrans) 
-    spTranslate(sp, dfLines)
+g <- graph.adjacency(mat, weighted = TRUE)
+parLapply(cl, unique(dfLines$station)[1], function(x) {
+  sp <- get.all.shortest.paths(g, x, mode = 'out')$res
+  sp_len <- sapply(sp, length)
+  temp <- sp[sp_len == 2]
+  temp_2 <- lapply(temp, function(y) {
+    spFindTopKResume(mat, x, names(y)[2], 5) %>% 
+      spFilter(2, matTrans) %>% 
+      spSort(matTime, matTrans) %>% 
+      spTranslate(dfLines)
   })
+  
+  temp <- sp[sp_len == 3]
+  temp_3 <- lapply(temp, function(y) {
+    spFindTopKResume(mat, x, names(y)[3], 5) %>% 
+      spFilter(2, matTrans) %>% 
+      spSort(matTime, matTrans) %>% 
+      spTranslate(dfLines)
+  })
+  
+  return(list(temp_2, temp_3, sp[sp_len>=4]))
 }) %>% 
   invisible()
 
+require(parallel)
+cl <- makeCluster(4)
+clusterExport(cl, 'g', environment())
+clusterExport(cl, 'mat', environment())
+clusterExport(cl, 'matTime', environment())
+clusterExport(cl, 'matTrans', environment())
+clusterExport(cl, 'dfLines', environment())
+clusterEvalQ(cl, require(igraph))
+clusterEvalQ(cl, require(magrittr))
+clusterEvalQ(cl, require(dplyr))
+clusterEvalQ(cl, source('parallel.R'))
