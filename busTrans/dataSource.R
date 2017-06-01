@@ -79,17 +79,24 @@ stationBetween <- function(dfLines, i, j, loop_lines = NULL) {
   })
 }
 
-for (i in rownames(test)) {
-  for (j in colnames(test)) {
+for (i in rownames(matTime)) {
+  for (j in colnames(matTime)) {
     if (mat[i, j] == 0) {
       next
     } else {
       temp <- stationBetween(bj, i, j, loop_lines = c('2', '10')) %>% 
         min(na.rm = TRUE)
-      test[i, j] <- temp * 3
+      matTime[i, j] <- temp * 3
     }
   }
 }
+
+matLines <- matrix(0, nrow = length(unique(dfLines$line)), ncol = length(unique(dfLines$station)), 
+                   dimnames = list(unique(dfLines$line), unique(dfLines$station)))
+matLines[cbind(dfLines$line, dfLines$station)] <- 1
+
+listLines <- lapply(unique(dfLines$line), function(x)dfLines$station[dfLines$line == x])
+names(listLines) <- unique(dfLines$line)
 
 ############################################################
 #                                                          #
