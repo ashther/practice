@@ -49,6 +49,10 @@ duplicated_station <- bj %>%
   tally(sort = TRUE) %>% 
   filter(n > 1) %>% 
   extract2('station')
+invisible(lapply(duplicated_station, function(x) {
+  dfLines[dfLines$station == x, 2] <<- mean(dfLines[dfLines$station == x, 2])
+  dfLines[dfLines$station == x, 3] <<- mean(dfLines[dfLines$station == x, 3])
+}))
 
 mat <- matrix(0, nrow = length(unique(bj$station)), ncol = length(unique(bj$station)), 
               dimnames = list(unique(bj$station), unique(bj$station)))
@@ -97,6 +101,24 @@ matLines[cbind(dfLines$line, dfLines$station)] <- 1
 
 listLines <- lapply(unique(dfLines$line), function(x)dfLines$station[dfLines$line == x])
 names(listLines) <- unique(dfLines$line)
+
+matTime <- lapply(unique(dfLines$line), function(x) {
+  temp <- dfLines[dfLines$line == x, ]
+  result <- matrix(0, nrow(temp), nrow(temp), dimnames = list(temp$station, temp$station))
+  idx <- t(combn(temp$station, 2))
+  result[idx] <- apply(idx, 1, function(y) {
+    if (x %in% c('2', '10')) {
+      min(
+        abs(which(temp$station == y[1]) - which(temp$station == y[2])), 
+        (nrow(temp) - abs(which(temp$station == y[1]) - which(temp$station == y[2])))
+      )
+    } else {
+      abs(which(temp$station == y[1]) - which(temp$station == y[2]))
+    }
+  })
+  result + t(result)
+})
+names(matTime) <- unique(dfLines$line)
 
 ############################################################
 #                                                          #
