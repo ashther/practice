@@ -71,13 +71,21 @@ tran2Find <- function(mat, from, to, matLines, matTime, dfLines, matManDist, p) 
   stop_combn <- as.matrix(expand.grid(stop_from, stop_to))
   stop_combn <- stop_combn[mat[stop_combn] == 1, ]
   
+  from_to <- matManDist[from, to]
+  from_stop1 <- matManDist[from, stop_combn[, 1]]
   from_stop2 <- matManDist[from, stop_combn[, 2]]
   stop1_to <- matManDist[stop_combn[, 1], to]
+  stop2_to <- matManDist[stop_combn[, 2], to]
+  stop1_stop2 <- matManDist[stop_combn]
   stop_combn <- stop_combn[
-    matManDist[from, stop_combn[, 1]] <= from_stop2 * p & 
-      matManDist[stop_combn] <= from_stop2 * p &
-      matManDist[stop_combn] <= stop1_to * p &
-      matManDist[to, stop_combn[, 2]] <= stop1_to * p, 
+    from_stop1 <= from_stop2 * p & 
+      stop1_stop2 <= from_stop2 * p &
+      stop1_stop2 <= stop1_to * p &
+      stop2_to <= stop1_to * p & 
+      from_stop1 <= from_to * p & 
+      stop1_to <= from_to * p & 
+      from_stop2 <= from_to * p & 
+      stop2_to <= from_to * p, 
     , drop = FALSE
     ]
   
