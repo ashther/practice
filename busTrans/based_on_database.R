@@ -1,35 +1,21 @@
 
 # convert to distance matrix
-stopFilter <- function(dfLines, from_to, to, stops, p = 1) {
-  to_lon <- dfLines[dfLines$station == to, 2][1]
-  to_lat <- dfLines[dfLines$station == to, 3][1]
-  stops_lon <- unique(dfLines[dfLines$station %in% stops, 2])
-  stops_lat <- unique(dfLines[dfLines$station %in% stops, 3])
-  (abs(stops_lon - to_lon) + abs(stops_lat - to_lat)) <= from_to*p
-}
+# stopFilter <- function(dfLines, from_to, from, to, stops, p = 1) {
+#   from_lon <- dfLines[dfLines$station == from, 2][1]
+#   from_lat <- dfLines[dfLines$station == from, 3][1]
+#   to_lon <- dfLines[dfLines$station == to, 2][1]
+#   to_lat <- dfLines[dfLines$station == to, 3][1]
+#   
+#   stops_gps <- sapply(unique(stops), function(x) {
+#     idx <- which(dfLines$station == x)[1]
+#     (abs(dfLines$lon[idx] - to_lon) + abs(dfLines$lat[idx] - to_lat)) <= from_to*p &
+#       (abs(dfLines$lon[idx] - from_lon) + abs(dfLines$lat[idx] - from_lat)) <= from_to*p
+#   })
+#   unname(stops_gps[stops])
+# }
 
 # from <- '西直门'
 # to <- '东直门'
-
-############################################################
-#                                                          #
-#                            0                             #
-#                                                          #
-############################################################
-
-# reachFind <- function(mat, from, to, matLines, listLines) {
-#   if (mat[from, to] == 1) {
-#     lines <- rownames(matLines)[matLines[, from] == 1 & matLines[, to] == 1]
-#     time <- stopBetween(listLines, from, to, lines, loop_lines = c('2', '10'))
-#     return(
-#       matrix(c(rep(paste(from, to, sep = ','), length(lines)), 
-#                lines, rep(0, length(lines)), unname(time)), 
-#              ncol = 4, dimnames = list(NULL, c('desc', 'line', 'tran', 'time')))
-#     )
-#   } else {
-#     return(NULL)
-#   }
-# }
 
 reachFind <- function(mat, from, to, matLines, matTime) {
   if (mat[from, to] == 1) {
@@ -45,20 +31,16 @@ reachFind <- function(mat, from, to, matLines, matTime) {
   }
 }
 
-############################################################
-#                                                          #
-#                            1                             #
-#                                                          #
-############################################################
-
 # from <- '立水桥'
 # to <- '安定门'
 
-tran1Find <- function(mat, from, to, matLines, matTime, dfLines) {
+tran1Find <- function(mat, from, to, matLines, matTime, dfLines, matManDist, p) {
   stops <- rownames(mat)[mat[from, ] == 1 & mat[, to] == 1]
-  from_to <- sum(abs(dfLines[dfLines$station == from, 2:3][1, ] -
-                       dfLines[dfLines$station == to, 2:3][1, ]))
-  stops <- stops[stopFilter(dfLines, from_to, to, stops, p = 1)]
+  from_to <- matManDist[from, to]
+  stops <- stops[
+    matManDist[from, stops] <= from_to * p & 
+      matManDist[to, stops] <= from_to * p
+  ]
   do.call(rbind, 
           lapply(stops, function(x) {
             line_a <- reachFind(mat, from, x, matLines, matTime)
@@ -80,24 +62,24 @@ tran1Find <- function(mat, from, to, matLines, matTime, dfLines) {
           }))
 }
 
-############################################################
-#                                                          #
-#                            2                             #
-#                                                          #
-############################################################
-
 # from <- '北苑'
 # to <- '安定门'
 
-tran2Find <- function(mat, from, to, matLines, matTime, dfLines) {
+tran2Find <- function(mat, from, to, matLines, matTime, dfLines, matManDist, p) {
   stop_from <- rownames(mat)[mat[from, ] == 1]
   stop_to <- rownames(mat)[mat[, to] == 1]
   stop_combn <- as.matrix(expand.grid(stop_from, stop_to))
   stop_combn <- stop_combn[mat[stop_combn] == 1, ]
   
-  from_to <- sum(abs(dfLines[dfLines$station == from, 2:3][1, ] -
-                       dfLines[dfLines$station == to, 2:3][1, ]))
-  stop_combn <- stop_combn[stopFilter(dfLines, from_to, to, stop_combn[, 1], p = 1), ]
+  from_stop2 <- matManDist[from, stop_combn[, 2]]
+  stop1_to <- matManDist[stop_combn[, 1], to]
+  stop_combn <- stop_combn[
+    matManDist[from, stop_combn[, 1]] <= from_stop2 * p & 
+      matManDist[stop_combn] <= from_stop2 * p &
+      matManDist[stop_combn] <= stop1_to * p &
+      matManDist[to, stop_combn[, 2]] <= stop1_to * p, 
+    , drop = FALSE
+    ]
   
   do.call(rbind, 
           lapply(seq_len(nrow(stop_combn)), function(x) {
@@ -123,4 +105,3 @@ tran2Find <- function(mat, from, to, matLines, matTime, dfLines) {
                   time)
           }))
 }
-
