@@ -43,6 +43,7 @@ bj <- lapply(list.files('beijing_subway/',full.names = TRUE), function(x) {
 }) %>% 
   do.call(rbind, .) %>% 
   set_colnames(c('station', 'lon', 'lat', 'line'))
+dfLines <- bj
 
 duplicated_station <- bj %>% 
   group_by(station) %>% 
@@ -58,6 +59,7 @@ mat <- matrix(0, nrow = length(unique(bj$station)), ncol = length(unique(bj$stat
               dimnames = list(unique(bj$station), unique(bj$station)))
 matTime <- mat
 matTrans <- mat
+matManDist <- mat
 
 invisible(lapply(unique(bj$line), function(x) {
   mat[t(combn(bj[bj$line == x, 'station'], 2))] <<- 1
@@ -99,8 +101,8 @@ matLines <- matrix(0, nrow = length(unique(dfLines$line)), ncol = length(unique(
                    dimnames = list(unique(dfLines$line), unique(dfLines$station)))
 matLines[cbind(dfLines$line, dfLines$station)] <- 1
 
-listLines <- lapply(unique(dfLines$line), function(x)dfLines$station[dfLines$line == x])
-names(listLines) <- unique(dfLines$line)
+# listLines <- lapply(unique(dfLines$line), function(x)dfLines$station[dfLines$line == x])
+# names(listLines) <- unique(dfLines$line)
 
 matTime <- lapply(unique(dfLines$line), function(x) {
   temp <- dfLines[dfLines$line == x, ]
@@ -119,6 +121,16 @@ matTime <- lapply(unique(dfLines$line), function(x) {
   result + t(result)
 })
 names(matTime) <- unique(dfLines$line)
+
+idxMatManDist <- t(combn(unique(dfLines$station), 2))
+matManDist[idxMatManDist] <- apply(idxMatManDist, 1, function(x) {
+  from_lon <- dfLines[dfLines$station == x[1], 2][1]
+  from_lat <- dfLines[dfLines$station == x[1], 3][1]
+  to_lon <- dfLines[dfLines$station == x[2], 2][1]
+  to_lat <- dfLines[dfLines$station == x[2], 3][1]
+  abs(from_lon - to_lon) + abs(from_lat - to_lat)
+})
+matManDist <- t(matManDist) + matManDist
 
 ############################################################
 #                                                          #
