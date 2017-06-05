@@ -40,7 +40,7 @@ tran1Find <- function(mat, from, to, matLines, matTime, dfLines, matManDist, p) 
   stops <- stops[
     matManDist[from, stops] <= from_to * p & 
       matManDist[to, stops] <= from_to * p
-  ]
+    ]
   do.call(rbind, 
           lapply(stops, function(x) {
             line_a <- reachFind(mat, from, x, matLines, matTime)
@@ -55,10 +55,10 @@ tran1Find <- function(mat, from, to, matLines, matTime, dfLines, matManDist, p) 
               as.numeric(line_a[line_a[, 'line'] == y[1], 'time']) + 
                 as.numeric(line_b[line_b[, 'line'] == y[2], 'time'])
             })
-            cbind(rep(paste(from, x, to, sep = ','), nrow(temp)), 
-                  paste(temp[, 1], temp[, 2], sep = ','), 
-                  rep('1', nrow(temp)), 
-                  time)
+            cbind(desc = rep(paste(from, x, to, sep = ','), nrow(temp)), 
+                  line = paste(temp[, 1], temp[, 2], sep = ','), 
+                  tran = rep('1', nrow(temp)), 
+                  time = time)
           }))
 }
 
@@ -107,9 +107,9 @@ tran2Find <- function(mat, from, to, matLines, matTime, dfLines, matManDist, p) 
                 as.numeric(line_b[line_b[, 'line'] == y[2], 'time']) + 
                 as.numeric(line_c[line_c[, 'line'] == y[3], 'time'])
             })
-            cbind(rep(paste(from, stop_combn[x, 1], stop_combn[x, 2], to, sep = ','), nrow(temp)), 
-                  paste(temp[, 1], temp[, 2], temp[, 3], sep = ','), 
-                  rep('2', nrow(temp)), 
-                  time)
+            cbind(desc = rep(paste(from, stop_combn[x, 1], stop_combn[x, 2], to, sep = ','), nrow(temp)), 
+                  line = paste(temp[, 1], temp[, 2], temp[, 3], sep = ','), 
+                  tran = rep('2', nrow(temp)), 
+                  time = time)
           }))
 }
