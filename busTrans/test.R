@@ -2,7 +2,7 @@
 require(parallel)
 cl <- makeCluster(4)
 
-vec <- unique(dfLines$station)[1:10]
+vec <- unique(dfLines$station)
 
 clusterExport(cl, 'vec', environment())
 clusterExport(cl, 'mat', environment())
@@ -10,8 +10,8 @@ clusterExport(cl, 'matLines', environment())
 clusterExport(cl, 'dfLines', environment())
 clusterExport(cl, 'matTime', environment())
 clusterExport(cl, 'matManDist', environment())
-clusterEvalQ(cl,require(magrittr))
-clusterEvalQ(cl, source('based_on_database.R'))
+clusterEvalQ(cl, require(magrittr))
+clusterEvalQ(cl, source('parallel.R'))
 
 
 test <- pbapply::pblapply(cl = cl, vec, function(from) {
@@ -19,16 +19,21 @@ test <- pbapply::pblapply(cl = cl, vec, function(from) {
     if (from == to) {
       return(NULL)
     }
-    tryCatch(
-      set_colnames(
-        as.data.frame(
-          rbind(
-            reachFind(mat, from, to, matLines, matTime),
-            tran1Find(mat, from, to, matLines, matTime, dfLines, matManDist, p = 1.1),
-            tran2Find(mat, from, to, matLines, matTime, dfLines, matManDist, p = 1.1)
-          ), stringsAsFactors = FALSE, row.names = FALSE
-        ), c('desc', 'line', 'trans', 'time')
-      ), 
+    tryCatch({
+      result <- rbind(
+        reachFindPar(mat, from, to, matLines, matTime),
+        tran1FindPar(mat, from, to, matLines, matTime, dfLines, matManDist, p = 1.1),
+        tran2FindPar(mat, from, to, matLines, matTime, dfLines, matManDist, p = 1.1)
+      )
+      data.frame(
+        desc = result[, 'desc'], 
+        line = result[, 'line'], 
+        tran = result[, 'tran'], 
+        time = result[, 'time'], 
+        stringsAsFactors = FALSE, 
+        row.names = NULL
+      )
+    }, 
       error = function(e)cat(from, to, '\n')
     )
   })
@@ -37,4 +42,32 @@ test <- pbapply::pblapply(cl = cl, vec, function(from) {
 })
 names(test) <- vec
 
-# toJSON(test,pretty = TRUE) %>% writeLines('test.json', useBytes = TRUE)
+# jsonlite::toJSON(test,pretty = TRUE) %>% writeLines('test.json', useBytes = TRUE)
+
+test <- pbapply::pblapply(vec, function(from) {
+  temp <- lapply(vec, function(to) {
+    if (from == to) {
+      return(NULL)
+    }
+    tryCatch({
+      result <- rbind(
+        reachFind(mat, from, to, matLines, matTime),
+        tran1Find(mat, from, to, matLines, matTime, dfLines, matManDist, p = 1.1),
+        tran2Find(mat, from, to, matLines, matTime, dfLines, matManDist, p = 1.1)
+      )
+      data.frame(
+        desc = result[, 'desc'], 
+        line = result[, 'line'], 
+        tran = result[, 'tran'], 
+        time = result[, 'time'], 
+        stringsAsFactors = FALSE, 
+        row.names = NULL
+      )
+    }, 
+      error = function(e)cat(from, to, '\n', e$message, '\n')
+    )
+  })
+  names(temp) <- vec
+  temp
+})
+names(test) <- vec
