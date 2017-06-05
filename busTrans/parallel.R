@@ -1,214 +1,6 @@
 
 
-
-
-suppressWarnings2 <- function(expr, regex = character()) {
-  withCallingHandlers(expr, warning = function(w) {
-    if (any(grepl(regex, w))) {
-      invokeRestart('muffleWarning')
-    }
-  })
-}
-
-###############################################################################
-# get top k shortest path based on mat
-###############################################################################
-
-spFindTopK <- function(mat, from, to, k) {
-  require(igraph)
-  result <- list()
-  variants <- list()
-  i <- 1
-  g <- graph.adjacency(mat, mode = 'directed', weighted = TRUE)
-  
-  spd <- shortest.paths(g, from, to, mode = 'out', algorithm = 'dijkstra')
-  if (!is.infinite(spd)) {
-    k1 <- get.shortest.paths(g, from, to, mode = 'out', output = 'both')
-    result <- list(list(g = g, 
-                        vert = k1$vpath, 
-                        path = k1$epath, 
-                        dist = spd))
-  } else {
-    cat('no shortest path found')
-    return(result)
-  }
-  while(i < k) {
-    n <- length(result)
-    variants <- variantCaculate(variants, result[[n]], from, to)
-    spIdx <- spIdxSelect(variants)
-    if (!identical(spIdx, integer(0))) {
-      result[[n + 1]] <- variants[[spIdx]]
-      variants <- variants[-spIdx]
-      i <- i + 1
-    } else {
-      break
-    }
-  }
-  return(result)
-}
-
-spFindTopKResume <- function(mat, from, to, k, result = list(), variants = list()) {
-  require(igraph)
-  i <- 1
-  
-  if ((n <- length(result)) == 0) {
-    g <- graph.adjacency(mat, mode = 'directed', weighted = TRUE)
-    # plot(g, edge.label = E(g)$weight)
-    spd <- shortest.paths(g, from, to, mode = 'out', algorithm = 'dijkstra')
-    if (!is.infinite(spd)) {
-      k1 <- suppressWarnings2(
-        get.shortest.paths(g, from, to, mode = 'out', output = 'both'), 
-        regex = "Couldn't reach some vertices"
-      )
-      result <- list(list(g = g, 
-                          vert = k1$vpath, 
-                          path = k1$epath, 
-                          dist = spd))
-    } else {
-      cat('no shortest path found')
-      return(result)
-    }
-  } else {
-    k <- k + 1
-  }
-  
-  while(i < k) {
-    n <- length(result)
-    variants <- variantCaculate(variants, result[[n]], from, to)
-    spIdx <- spIdxSelect(variants)
-    if (!identical(spIdx, integer(0))) {
-      result[[n + 1]] <- variants[[spIdx]]
-      variants <- variants[-spIdx]
-      i <- i + 1
-    } else {
-      break
-    }
-  }
-  return(list(result = result, variants = variants))
-}
-
-variantCaculate <- memoise::memoise(function(variants, variant, from, to) {
-  g <- variant$g
-  for (j in unlist(variant$path)) {
-    new_g <- delete.edges(g, j)
-    sp <- suppressWarnings2(
-      get.shortest.paths(new_g, from, to, mode = 'out', output = 'both'), 
-      regex = "Couldn't reach some vertices"
-    )
-    spd <- shortest.paths(new_g, from, to, mode = 'out', algorithm = 'dijkstra')
-    if (!is.infinite(spd)) {
-      if (!spContains(variants, sp)) {
-        variants[[length(variants) + 1]] <- 
-          list(g = new_g, vert = sp$vpath, path = sp$epath, dist = spd)
-      }
-    }
-  }
-  return(variants)
-})
-
-spContains <- function(variants, sp) {
-  any(unlist(lapply(variants, function(x)identical(unlist(x$vert), unlist(sp$vpath)))))
-}
-
-spIdxSelect <- function(variants) {
-  which.min(sapply(variants, function(x)x$dist))
-}
-
-###############################################################################
-# filter and sort shortest path
-###############################################################################
-
-mtxValueGet <- function(vec, mat) {
-  if (length(vec) <= 1) {
-    return(0)
-  }
-  vec <- as.character(vec)
-  mat[cbind(vec[1:(length(vec) - 1)], vec[2:length(vec)])]
-}
-
-# sp <- spFindTopKResume()
-spFilter <- function(sp, n, matTrans) {
-  idx <- sapply(sp$result, function(x) {
-    temp <- names(unlist(x$vert))
-    temp <- temp[-c(1, length(temp))]
-    (length(temp) <= n) | 
-      ((length(temp) <= (n + 1)) & any(mtxValueGet(temp, matTrans) == 1))
-  })
-  lapply(sp$result[idx], function(x)list(vert = unlist(x$vert), dist = x$dist))
-}
-
-# sp <- spFilter()
-spSort <- function(sp, matTime, matTrans, by = c('tran', 'time')) {
-  time_tran <- t(sapply(sp, function(x) {
-    vec <- names(x$vert)
-    time <- sum(mtxValueGet(vec, matTime))
-    tran <- length(vec) - sum(mtxValueGet(vec, matTrans)) - 2
-    # tran <- length(vec) - sum(mtxValueGet(vec[-c(1, length(vec))], matTrans)) - 2
-    return(c(time = time, tran = tran))
-  }))
-  orders <- order(time_tran[, by[1]], time_tran[, by[2]])
-  result <- lapply(seq_along(sp), function(x) {
-    c(paste0(names(sp[[x]]$vert), collapse = ','),
-      time_tran[x, 'tran'],
-      time_tran[x, 'time'])
-  }) %>% 
-    do.call(rbind, .) %>% 
-    as.data.frame(stringsAsFactors = FALSE) %>% 
-    set_colnames(c('sp', 'tran', 'time'))
-  result$tran <- as.integer(result$tran)
-  result$time <- as.numeric(result$time)
-  return(result[orders, ])
-}
-
-# sp <- spSort()
-spTranslate <- function(sp, dfLines) {
-  sp$lines <- apply(sp, 1, function(x) {
-    temp <- unlist(strsplit(x[1], ','))
-    temp <- cbind(temp[1:(length(temp) - 1)], 
-                  temp[2:length(temp)])
-    temp <- apply(temp, 1, function(x) {
-      stationBetween(dfLines, x[1], x[2], loop_lines = c('2', '10')) %>% {
-        names(.)[which.min(.)]
-      }
-    })
-    if (length(temp) == 1) {
-      return(paste0(temp, collapse = ','))
-    } else if (any(temp[1:(length(temp) - 1)] == temp[2:length(temp)])) {
-      return(NA)
-    } else {
-      return(paste0(temp, collapse = ','))
-    }
-  })
-  distinct(filter(sp, !is.na(lines)))
-}
-
-stationBetween <- function(dfLines, i, j, loop_lines = NULL) {
-  sapply(unique(dfLines$line), function(l) {
-    stations <- dfLines$station[dfLines$line == l]
-    if (all(c(i, j) %in% stations)) {
-      if (!is.null(loop_lines) & l %in% loop_lines) {
-        min(
-          abs(which(stations == j) - which(stations == i)), 
-          (length(stations) - abs(which(stations == j) - which(stations == i)))
-        )
-      } else {
-        abs(which(stations == j) - which(stations == i))
-      }
-    } else {
-      NA
-    }
-  })
-}
-
-stopFilter <- function(dfLines, from_to, to, stops, p = 1) {
-  to_lon <- dfLines[dfLines$station == to, 2][1]
-  to_lat <- dfLines[dfLines$station == to, 3][1]
-  stops_lon <- unique(dfLines[dfLines$station %in% stops, 2])
-  stops_lat <- unique(dfLines[dfLines$station %in% stops, 3])
-  (abs(stops_lon - to_lon) + abs(stops_lat - to_lat)) <= from_to*p
-}
-
-reachFind <- function(mat, from, to, matLines, matTime) {
+reachFindPar <- function(mat, from, to, matLines, matTime) {
   if (mat[from, to] == 1) {
     lines <- rownames(matLines)[matLines[, from] == 1 & matLines[, to] == 1]
     time <- sapply(lines, function(x)matTime[[x]][from, to])
@@ -223,15 +15,17 @@ reachFind <- function(mat, from, to, matLines, matTime) {
 }
 
 
-tran1Find <- function(mat, from, to, matLines, matTime, dfLines) {
+tran1FindPar <- function(mat, from, to, matLines, matTime, dfLines, matManDist, p) {
   stops <- rownames(mat)[mat[from, ] == 1 & mat[, to] == 1]
-  from_to <- sum(abs(dfLines[dfLines$station == from, 2:3][1, ] - 
-                       dfLines[dfLines$station == to, 2:3][1, ]))
-  stops <- stops[stopFilter(dfLines, from_to, to, stops, p = 1)]
+  from_to <- matManDist[from, to]
+  stops <- stops[
+    matManDist[from, stops] <= from_to * p & 
+      matManDist[to, stops] <= from_to * p
+    ]
   do.call(rbind, 
           lapply(stops, function(x) {
-            line_a <- reachFind(mat, from, x, matLines, matTime)
-            line_b <- reachFind(mat, x, to, matLines, matTime)
+            line_a <- reachFindPar(mat, from, x, matLines, matTime)
+            line_b <- reachFindPar(mat, x, to, matLines, matTime)
             temp <- expand.grid(line_a[, 'line'], line_b[, 'line'], 
                                 stringsAsFactors = FALSE)
             temp <- temp[temp[, 1] != temp[, 2], , drop = FALSE]
@@ -242,37 +36,43 @@ tran1Find <- function(mat, from, to, matLines, matTime, dfLines) {
               as.numeric(line_a[line_a[, 'line'] == y[1], 'time']) + 
                 as.numeric(line_b[line_b[, 'line'] == y[2], 'time'])
             })
-            cbind(rep(paste(from, x, to, sep = ','), nrow(temp)), 
-                  paste(temp[, 1], temp[, 2], sep = ','), 
-                  rep('1', nrow(temp)), 
-                  time)
+            cbind(desc = rep(paste(from, x, to, sep = ','), nrow(temp)), 
+                  line = paste(temp[, 1], temp[, 2], sep = ','), 
+                  tran = rep('1', nrow(temp)), 
+                  time = time)
           }))
 }
 
-############################################################
-#                                                          #
-#                            2                             #
-#                                                          #
-############################################################
 
-# from <- '北苑'
-# to <- '安定门'
-
-tran2Find <- function(mat, from, to, matLines, matTime, dfLines) {
+tran2FindPar <- function(mat, from, to, matLines, matTime, dfLines, matManDist, p) {
   stop_from <- rownames(mat)[mat[from, ] == 1]
   stop_to <- rownames(mat)[mat[, to] == 1]
   stop_combn <- as.matrix(expand.grid(stop_from, stop_to))
   stop_combn <- stop_combn[mat[stop_combn] == 1, ]
   
-  from_to <- sum(abs(dfLines[dfLines$station == from, 2:3][1, ] - 
-                       dfLines[dfLines$station == to, 2:3][1, ]))
-  stop_combn <- stop_combn[stopFilter(dfLines, from_to, to, stop_combn[, 1], p = 1), ]
+  from_to <- matManDist[from, to]
+  from_stop1 <- matManDist[from, stop_combn[, 1]]
+  from_stop2 <- matManDist[from, stop_combn[, 2]]
+  stop1_to <- matManDist[stop_combn[, 1], to]
+  stop2_to <- matManDist[stop_combn[, 2], to]
+  stop1_stop2 <- matManDist[stop_combn]
+  stop_combn <- stop_combn[
+    from_stop1 <= from_stop2 * p & 
+      stop1_stop2 <= from_stop2 * p &
+      stop1_stop2 <= stop1_to * p &
+      stop2_to <= stop1_to * p & 
+      from_stop1 <= from_to * p & 
+      stop1_to <= from_to * p & 
+      from_stop2 <= from_to * p & 
+      stop2_to <= from_to * p, 
+    , drop = FALSE
+    ]
   
   do.call(rbind, 
           lapply(seq_len(nrow(stop_combn)), function(x) {
-            line_a <- reachFind(mat, from, stop_combn[x, 1], matLines, matTime)
-            line_b <- reachFind(mat, stop_combn[x, 1], stop_combn[x, 2], matLines, matTime)
-            line_c <- reachFind(mat, stop_combn[x, 2], to, matLines, matTime)
+            line_a <- reachFindPar(mat, from, stop_combn[x, 1], matLines, matTime)
+            line_b <- reachFindPar(mat, stop_combn[x, 1], stop_combn[x, 2], matLines, matTime)
+            line_c <- reachFindPar(mat, stop_combn[x, 2], to, matLines, matTime)
             temp <- expand.grid(line_a[, 'line'], 
                                 line_b[, 'line'], 
                                 line_c[, 'line'], stringsAsFactors = FALSE)
@@ -286,9 +86,9 @@ tran2Find <- function(mat, from, to, matLines, matTime, dfLines) {
                 as.numeric(line_b[line_b[, 'line'] == y[2], 'time']) + 
                 as.numeric(line_c[line_c[, 'line'] == y[3], 'time'])
             })
-            cbind(rep(paste(from, stop_combn[x, 1], stop_combn[x, 2], to, sep = ','), nrow(temp)), 
-                  paste(temp[, 1], temp[, 2], temp[, 3], sep = ','), 
-                  rep('2', nrow(temp)), 
-                  time)
+            cbind(desc = rep(paste(from, stop_combn[x, 1], stop_combn[x, 2], to, sep = ','), nrow(temp)), 
+                  line = paste(temp[, 1], temp[, 2], temp[, 3], sep = ','), 
+                  tran = rep('2', nrow(temp)), 
+                  time = time)
           }))
 }
