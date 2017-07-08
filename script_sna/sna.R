@@ -28,6 +28,7 @@ people_cor %>%
   filter(correlation > thr_cor) %>% 
   graph_from_data_frame() %>% {
     people_cor_net <<- .
+    # E(people_cor_net)$weight <<- E(people_cor_net)$correlation
     mbs <- cluster_edge_betweenness(people_cor_net)$membership
     deg <- degree(people_cor_net, mode = 'all')
     ggraph(graph = people_cor_net, layout = 'auto') + 
@@ -51,6 +52,7 @@ people_count %>%
   filter(n > thr_count) %>% 
   graph_from_data_frame() %>% {
     people_count_net <<- .
+    # E(people_count_net)$weight <<- E(people_count_net)$n
     mbs <- cluster_edge_betweenness(people_count_net)$membership
     deg <- degree(people_count_net, mode = 'all')
     ggraph(graph = people_count_net, layout = 'fr') + 
@@ -71,36 +73,66 @@ people_count %>%
          plot = .)
 
 netAttrGet <- function(net) {
-  deg <- sort(degree(net, loops = FALSE), decreasing = TRUE)
-  clo <- sort(round(closeness(net, mode = 'all'), 2), decreasing = TRUE)
-  btw <- sort(round(betweenness(net, directed = FALSE), 2), decreasing = TRUE)
+  deg <- centr_degree(net)
+  clo <- centr_clo(net, mode = 'all')
+  btw <- centr_betw(net)
+  pg <- page.rank(net)$vector
   cat(
     '\n', 
     sprintf(
-      'edge density: %s', edge_density(net, loops = FALSE)
+      'edge density: %s', round(edge_density(net, loops = TRUE), 3)
     ), '\n', 
     sprintf(
       'diameter: %s', diameter(net, directed = FALSE)
     ), '\n', 
     sprintf(
-      'degree: %s', paste(names(deg), deg, sep = ':', collapse = ' ')
+      'degree centralization: %s', round(deg$centralization, 3)
     ), '\n', 
     sprintf(
-      'closeness: %s', paste(names(clo), clo, sep = ':', collapse = ' ')
+      'closeness centralization: %s', round(clo$centralization, 3)
     ), '\n', 
     sprintf(
-      'betweenness: %s', paste(names(btw), btw, sep = ':', collapse = ' ')
-    ), '\n'
+      'betweenness centralization: %s', round(btw$centralization, 3)
+    ), '\n\n'
   )
+  
+  data_frame(name = V(net)$name, 
+             degree = deg$res, 
+             closeness = round(clo$res, 3), 
+             betweenness = round(btw$res, 3), 
+             page.rank = round(pg, 3)) %>% 
+    arrange(desc(page.rank)) %>% 
+    print()
 }
 
 netClusterPlot <- function(net) {
   ceb <- cluster_edge_betweenness(net)
   clp <- cluster_label_prop(net)
   cfg <- cluster_fast_greedy(as.undirected(net))
+  wt <- cluster_walktrap(net)
   
-  par(mfrow = c(1, 3))
-  plot(ceb, net, edge.arrow.mode = 0, vertex.label.dist = 1, main = 'ceb')
-  plot(clp, net, edge.arrow.mode = 0, vertex.label.dist = 1, main = 'clp')
-  plot(cfg, net, edge.arrow.mode = 0, vertex.label.dist = 1, main = 'cfg')
+  old.par.mfrow <- par()$mfrow
+  on.exit(par(mfrow = old.par.mfrow))
+  
+  par(mfrow = c(1, 4))
+  plot(ceb, net, 
+       edge.arrow.mode = 0, 
+       vertex.label.dist = 1, 
+       main = paste0('ceb: ', round(modularity(ceb), 3)), 
+       layout = layout_with_fr)
+  plot(clp, net, 
+       edge.arrow.mode = 0, 
+       vertex.label.dist = 1, 
+       main = paste0('clp: ', round(modularity(clp), 3)), 
+       layout = layout_with_fr)
+  plot(cfg, net, 
+       edge.arrow.mode = 0, 
+       vertex.label.dist = 1, 
+       main = paste0('cfg: ', round(modularity(cfg), 3)), 
+       layout = layout_with_fr)
+  plot(wt, net, 
+       edge.arrow.mode = 0, 
+       vertex.label.dist = 1, 
+       main = paste0('wt: ', round(modularity(wt), 3)), 
+       layout = layout_with_fr)
 }
