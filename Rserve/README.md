@@ -9,23 +9,23 @@ output: html_document
 32位win7，1.7或者更高版本的JDK，Eclipse（Luna），R 3.1.3
 
 ### 步骤1 安装Rserve包
-```{bash}
+```bash
 R CMD INSTALL Rserve_1.7-3.tar.gz # 安装包提前下好，为了避免麻烦，最好从命令行安装
 ```
 
 ### 步骤2 启动Rserve服务器
 为了启动Rserve服务器，首先要导入Rserve包
-```{r}
+```r
 library(Rserve)
 Rserve()
 ```
 或者（最好）从命令行启动，并允许远程连接
-```{bash}
+```bash
 R CMD Rserve --RS-enable-remote
 # iptables -I INPUT -p tcp --dport 6311 -j ACCEPT # 可能需要手动开启6311端口
 ```
 命令行启动Rserve遇到`Rserve: not found`错误时，创建软连接
-```{bash}
+```bash
 cd /usr/lib64/R/bin
 ln -s /usr/lib64/R/library/Rserve/libs/Rserve Rserve
 ```
@@ -53,7 +53,7 @@ ln -s /usr/lib64/R/library/Rserve/libs/Rserve Rserve
 * 现在在RserveProject的**src**文件夹下创建一个叫**pkg**的包，在**pkg**下面创建一个类**Temp.java**
 
 ### 步骤4 创建R脚本
-```{r}
+```r
 myAdd=function(x,y){
     sum=x+y
     return(sum)
@@ -63,7 +63,7 @@ myAdd=function(x,y){
 
 ### 步骤5 在java程序中调用R脚本
 创建如下程序
-```{java}
+```java
 package pkg;
 
 import org.rosuda.REngine.REXPMismatchException;
@@ -98,17 +98,17 @@ public class Temp {
 
 
 在java程序中加入
-```{java}
+```java
 RConnection connection = new RConnection();
 ```
 Rserve就能够同时处理多请求（Linux可以直接这样做），在Windows平台你需要手动开启3个Rserve实例来获得3个R线程
-```{r}
+```r
 Rserve(port=6311)
 Rserve(port=6312)
 Rserve(port=6313)
 ```
 而在java端，需要
-```{java}
+```java
  //Connect Thread 1 to instance running on port 6311
  RConnection connection = new RConnection("hostIP_or_hostName",6311);
  
