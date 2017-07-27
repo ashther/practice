@@ -9,10 +9,8 @@ output: html_document
 32位win7，1.7或者更高版本的JDK，Eclipse（Luna），R 3.1.3
 
 ### 步骤1 安装Rserve包
- 
- 
-```{r}
-install.packages('Rserve')
+```{bash}
+R CMD INSTALL Rserve_1.7-3.tar.gz # 安装包提前下好，为了避免麻烦，最好从命令行安装
 ```
 
 ### 步骤2 启动Rserve服务器
@@ -20,6 +18,16 @@ install.packages('Rserve')
 ```{r}
 library(Rserve)
 Rserve()
+```
+或者（最好）从命令行启动，并允许远程连接
+```{bash}
+R CMD Rserve --RS-enable-remote
+# iptables -I INPUT -p tcp --dport 6311 -j ACCEPT # 可能需要手动开启6311端口
+```
+命令行启动Rserve遇到`Rserve: not found`错误时，创建软连接
+```{bash}
+cd /usr/lib64/R/bin
+ln -s /usr/lib64/R/library/Rserve/libs/Rserve Rserve
 ```
 
 你的控制台将会看到：  
