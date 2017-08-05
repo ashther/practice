@@ -1,30 +1,34 @@
 
 # library(janeaustenr)
 # library(tidytext)
-source('dataSource.R')
+# source('dataSource.R', encoding = 'utf-8')
 
-netCreate <- function(script, item = 'people', feature = 'scene',  
-                      thr = 0.75, plot = TRUE, plot_name = 'count_') {
+netCreate <- function(people, item = 'people', feature = 'scene', wt = 'n',  
+                      thr = 0.85, plot = TRUE, plot_name = 'count_') {
   require(widyr)
   require(dplyr)
   require(ggraph)
   require(igraph)
   
-  people_count_net <- script %>% 
-    pairwise_count_(item, feature, sort = TRUE) %>% 
+  people_count_net <- people %>% 
+    pairwise_count_(item = item, feature = feature, wt = wt, sort = TRUE) %>% 
     filter(n > quantile(pull(., n), thr)) %>% 
     graph_from_data_frame()
+  E(people_count_net)$weight <- 1/E(people_count_net)$n
   
   if (plot) {
     mbs <- cluster_fast_greedy(as.undirected(people_count_net))$membership
-    deg <- degree(people_count_net, mode = 'all')
+    eg <- evcent(people_count_net, 
+                 directed = TRUE, 
+                 weights = E(people_count_net)$n)$vector * 200
+    # deg <- degree(people_count_net)
     {
       ggraph(graph = people_count_net, layout = 'fr') + 
         geom_edge_link(aes(edge_alpha = n, 
                            edge_width = n), 
                        edge_colour = 'darkred', 
                        show.legend = FALSE) + 
-        geom_node_point(aes(size = deg, 
+        geom_node_point(aes(size = eg, 
                             color = as.factor(mbs)), 
                         show.legend = FALSE) + 
         geom_node_text(aes(label = name), repel = TRUE, 
@@ -44,40 +48,32 @@ netAttrGet <- function(net) {
   require(tibble)
   require(igraph)
   
-  deg <- centr_degree(net)
-  clo <- centr_clo(net, mode = 'all')
+  E(net)$weight <- 1/E(net)$n # for closeness and betweenness, not page rank
+  
+  deg <- centr_degree(net, mode = 'out')
+  clo <- centr_clo(net, mode = 'out')
   btw <- centr_betw(net)
-  pg <- page.rank(net)$vector
-  cat(
-    '\n', 
-    sprintf(
-      'edge density: %s', round(edge_density(net, loops = TRUE), 3)
-    ), '\n', 
-    sprintf(
-      'diameter: %s', diameter(net, directed = FALSE)
-    ), '\n', 
-    sprintf(
-      'degree centralization: %s', round(deg$centralization, 3)
-    ), '\n', 
-    sprintf(
-      'closeness centralization: %s', round(clo$centralization, 3)
-    ), '\n', 
-    sprintf(
-      'betweenness centralization: %s', round(btw$centralization, 3)
-    ), '\n\n'
+  eg <- evcent(net, directed = TRUE, weights = E(net)$n)$vector # special
+  g_level <- c(
+    'edge_density' = round(edge_density(net, loops = TRUE), 3), 
+    'diameter' = diameter(net, directed = FALSE), 
+    'centr_degree' = round(deg$centralization, 3), 
+    'centr_clo' = round(clo$centralization, 3), 
+    'centr_btw' = round(btw$centralization, 3)
   )
   
-  data_frame(name = V(net)$name, 
+  n_level <- data_frame(name = V(net)$name, 
              degree = deg$res, 
-             closeness = round(clo$res, 3), 
-             betweenness = round(btw$res, 3), 
-             page.rank = round(pg, 3)) %>% 
-    arrange(desc(page.rank)) %>% 
-    print()
+             closeness = round(closeness(net, mode = 'out', normalized = TRUE), 3), 
+             betweenness = round(betweenness(net, normalized = TRUE), 3), 
+             eigenvector = round(eg, 3)) %>% 
+    arrange(desc(eigenvector))
+  return(list(g = g_level, n = n_level))
 }
 
 netClusterPlot <- function(net) {
   require(igraph)
+  E(net)$weight <- 1/E(net)$n
   
   ceb <- cluster_edge_betweenness(net)
   clp <- cluster_label_prop(net)
@@ -117,6 +113,32 @@ netClusterPlot <- function(net) {
        layout = layout_with_fr)
   title(paste0('wt: ', round(modularity(wt), 3)), cex.main = 3)
   on.exit(dev.off())
+}
+
+jsonOutput <- function(net) {
+  require(igraph)
+  require(tibble)
+  require(magrittr)
+  
+  E(net)$weight <- 1/E(net)$n
+  mbs <- cluster_fast_greedy(as.undirected(net))$membership %>% 
+    set_names(V(net)$name) %>% 
+    enframe()
+  eg <- evcent(net, directed = TRUE, weights = E(net)$n)$vector %>% 
+    enframe()
+  
+  result <- get.edgelist(net) %>% 
+    cbind(E(net)$n) %>% 
+    as.data.frame(stringsAsFactors = FALSE) %>% 
+    set_colnames(c('from', 'to', 'n')) %>% 
+    left_join(mbs, by = c('from' = 'name')) %>% 
+    left_join(eg, by = c('from' = 'name')) %>% 
+    set_colnames(c('from', 'to', 'n', 'mbs', 'eg'))
+  # result$from <- iconv(result$from, to = 'utf-8')
+  # result$to <- iconv(result$to, to = 'utf-8')
+  jsonlite::toJSON(result) %>% 
+    writeLines('test.json', useBytes = FALSE)
+  result
 }
 
 # austen_section_words <- austen_books() %>% 
