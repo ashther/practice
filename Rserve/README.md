@@ -24,7 +24,7 @@ Rserve()
 R CMD Rserve --RS-enable-remote
 # iptables -I INPUT -p tcp --dport 6311 -j ACCEPT # 可能需要手动开启6311端口
 ```
-或者以R CMD Rserve --RS-conf Rserv.conf的方式启动，这时需要编辑好配置文件Rserv.conf
+或者以`R CMD Rserve --RS-conf Rserv.conf`的方式启动，这时需要编辑好配置文件Rserv.conf
 ```
 remote enable
 encoding utf8
