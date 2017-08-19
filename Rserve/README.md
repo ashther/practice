@@ -26,7 +26,9 @@ R CMD Rserve --RS-enable-remote
 ```
 命令行启动Rserve遇到`Rserve: not found`错误时，创建软连接
 ```bash
-cd /usr/lib64/R/bin
+# which R
+# /usr/local/bin/R
+cd /usr/local/lib64/R/bin
 ln -s /usr/lib64/R/library/Rserve/libs/Rserve Rserve
 ```
 
