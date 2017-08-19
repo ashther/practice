@@ -24,6 +24,14 @@ Rserve()
 R CMD Rserve --RS-enable-remote
 # iptables -I INPUT -p tcp --dport 6311 -j ACCEPT # 可能需要手动开启6311端口
 ```
+或者以R CMD Rserve --RS-conf Rserv.conf的方式启动，这时需要编辑好配置文件Rserv.conf
+```
+remote enable
+encoding utf8
+source /home/slj/Rserv_conf/Rserv_conf.R
+```
+其中的`Rserv_conf.R`为加载library和数据文件的R脚本
+
 命令行启动Rserve遇到`Rserve: not found`错误时，创建软连接
 ```bash
 # which R
