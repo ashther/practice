@@ -31,7 +31,8 @@ netCoocCreate <- function(db_path, sql_actor_play, thr) {
 
 # sql_talk <- 'select * from episode_talk'
 # sql_seg_word <- 'select episode, scene, section, word from episode_word where stopWord != 1 and word != ""'
-netSentCreate <- function(db_path, sql_talk, sql_seg_word, nodes_name, termVec, 
+netSentCreate <- function(db_path, sql_talk, sql_seg_word, 
+                          nodes_name, termVec, 
                           termVecSentMtx, termVecSentDT) {
   require(igraph)
   require(data.table)
@@ -332,10 +333,9 @@ sentCaculateTest <- function(script_keywords, nodes_name, termVec,
 # the only entry function interface --------------------------------------
 # THR_netGet = 0.9
 # LOG_PATH <- '~/log'
-netGet <- function(db_path, 
-                   sql_actor_play = 'select * from episode_actor_play', 
-                   sql_talk = 'select * from episode_talk', 
-                   sql_seg_word = 'select episode, scene, section, word from episode_word where stopWord != 1 and word != ""', 
+netGet <- function(episode_root, host_path = HOST_PATH, 
+                   episode_from = 0, 
+                   episode_to = 999, 
                    .termVec = termVec, .termVecSentMtx = termVecSentMtx, 
                    .termVecSentDT = termVecSentDT, 
                    thr = THR_netGet, log_path = LOG_PATH) {
@@ -354,8 +354,28 @@ netGet <- function(db_path,
     openlog(file.path(log_path, 'netGet.log'), append = TRUE)
     on.exit(closelog(sessionInfo = FALSE))
     
+    # sqlInterpolate is safe, but lots of code need to be modified in that way
+    sql_actor_play <- sprintf(
+      paste0('select episode, scene, actor, frequency from episode_actor_play ', 
+             'where episode between %s and %s'), 
+      episode_from, episode_to
+    )
+    sql_talk <- sprintf(
+      paste0('select episode, scene, section, "from" from episode_talk ', 
+             'where episode between %s and %s'), 
+      episode_from, episode_to
+    )
+    sql_seg_word <- sprintf(
+      paste0('select episode, scene, section, word from episode_word ', 
+             'where episode between %s and %s ', 
+             'and stopWord != 1 and word != ""'), 
+      episode_from, episode_to
+    )
+    
+    # tranform db path on host to path in docker container
+    db_path <- file.path(sub(host_path, '', episode_root), 'meta.db')
+    
     # creat cooc net structure
-    # net_cooc <- netCoocCreate(people, thr)
     net_cooc <- netCoocCreate(db_path, sql_actor_play, thr)
     printlog('net_cooc created')
     
@@ -385,10 +405,8 @@ netGet <- function(db_path,
     
     # create sent net structure
     nodes_name <- V(net_cooc)$name
-    # net_sent <- netSentCreate(script_keywords, nodes_name, 
-    #                           .termVec, .termVecSentMtx, 
-    #                           .termVecSentDT)
-    net_sent <- netSentCreate(db_path, sql_talk, sql_seg_word, nodes_name, .termVec, 
+    net_sent <- netSentCreate(db_path, sql_talk, sql_seg_word, 
+                              nodes_name, .termVec, 
                               .termVecSentMtx, .termVecSentDT)
     printlog('net_sent created')
     
@@ -403,8 +421,8 @@ netGet <- function(db_path,
       )
     )
     
-    jsonlite::toJSON(list(state = 0, 
-                          message = 'completed', 
+    jsonlite::toJSON(list(code = 0, 
+                          msg = '', 
                           categories_cooc = attr_cooc$categories, 
                           nodes_cooc = attr_cooc$nodes, 
                           links_cooc = attr_cooc$links, 
@@ -421,7 +439,7 @@ netGet <- function(db_path,
   }, 
   error = function(e) {
     printlog(sprintf('error: %s', e$message))
-    jsonlite::toJSON(list(state = 1, message = e$message), 
+    jsonlite::toJSON(list(code = -1, msg = e$message), 
                      auto_unbox = TRUE)
   })
 }
