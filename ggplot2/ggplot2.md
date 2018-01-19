@@ -1,3 +1,4 @@
+# 多图布局
 ```{r}
 library(tidyverse)
 library(ggthemes)
@@ -49,6 +50,7 @@ grid.arrange(xdensity, blankplot, xyscatter, ydensity,
 
 ![](ggplot2.png)
 
+# 如何绘制地图
 ```{r}
 # download from http://www.gadm.org/country
 chn_adm <- read_rds('CHN_adm1.rds')
