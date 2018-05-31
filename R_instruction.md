@@ -8,9 +8,10 @@ yum install -y libXt-devel
 yum install -y texinfo
 yum install -y texlive-pdftex-doc
 
-yum install -y libcurl-devel
+# centOS
+yum install -y libcurl-devel # libcurl4-openssl-dev on Debian
 yum install -y libxml2-devel
-yum install -y openssl-devel
+yum install -y openssl-devel # libssl-dev on Debian
 yum install -y udunits2
 yum install -y udunits2-devel
 ```
