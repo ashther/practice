@@ -54,3 +54,6 @@ Temporary Items
 *mdown
 *utf8
 *.json
+
+API_ZZZ/pkg/
+API_ZZZ/**/rds

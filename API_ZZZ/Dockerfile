@@ -8,4 +8,4 @@ install.packages(c('dplyr', 'igraph', 'luzlogr', 'jsonlite', 'Rserve', 'R6', \
                          type = 'source', contriburl = 'file:///pkg');\
 devtools::install_local(path = '/pkg/RestRserve');"
 EXPOSE 8000
-CMD Rscript /home/rstudio/RestRserve/current_app_snapshot.R
+CMD Rscript /home/rstudio/RestRserve.R

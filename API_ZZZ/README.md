@@ -1,5 +1,5 @@
 ### 离线安装R包的准备工作
-```r
+```R
 getPackages <- function(packs){
   packages <- unlist(
     tools::package_dependencies(packs, available.packages(),
@@ -32,17 +32,17 @@ tools::write_PACKAGES('~/docker/pkg/', verbose = TRUE)
 ```
 
 ### 容器启动
-由于需要RestRserve以前台模式启动并保持，所以不使用restrserve_start的启动方式，而是在原定义接口函数的脚本末添加：
-```r
+由于需要RestRserve以前台模式启动并保持，所以不使用`restrserve_start`的启动方式，而是在原定义接口函数的脚本末添加：
+```R
 RestRserveApp$run(http_port = "8000", 
                   encoding = 'utf8', 
                   port = '6311', 
                   remote = 'enable')
 ```
 
-Docker启动，current_app_snapshot.R为定义了接口函数的脚本，~/docker/RestRserve目录下包括接口函数脚本和所需要的rds文件
+Docker启动，api_*.R为定义了各接口函数的脚本，`~/docker/RestRserve`目录下包括接口函数脚本和所需要的rds文件
 ```bash
-sudo docker run --rm -p 8000:8000 -v $HOME/docker/RestRserve:/home/rstudio/RestRserve/ r-api Rscript /home/rstudio/RestRserve/current_app_snapshot.R
+$ sudo docker run --rm -e TZ=Asia/Shanghai -p 8000:8000 -v $HOME/docker/RestRserve:/home/rstudio/ -d r-api 
 ```
 
-注意修改脚本起始的`HOME_PATH`为`/home/rstudio`
+注意修改RestRserve.R脚本起始的`HOME_PATH`为`/home/rstudio`
