@@ -76,7 +76,7 @@ nodeCentrAdd <- function(g) {
   g
 }
 
-graphGet <- function(id, is_dep = TRUE, home_path = HOME_PATH,  
+graphGet <- function(id, is_dep = TRUE, loglevel = 0, home_path = HOME_PATH,  
                      .graphCampus = graphCampus, .nodes = nodes) {
   tryCatch({
     suppressPackageStartupMessages({
@@ -84,8 +84,10 @@ graphGet <- function(id, is_dep = TRUE, home_path = HOME_PATH,
       library(luzlogr)
     })
     
-    openlog(file.path(home_path, 'graphGet.log'), append = TRUE)
-    on.exit(closelog(sessionInfo = FALSE), add = TRUE)
+    if (loglevel > 0) {
+      openlog(file.path(home_path, 'graphGet.log'), append = TRUE)
+      on.exit(closelog(sessionInfo = FALSE), add = TRUE)
+    }
     
     if ((is_dep & !id %in% .nodes$ACCDEPID) | 
         (!is_dep & !id %in% .nodes$ACCNUM)) {
@@ -107,16 +109,16 @@ graphGet <- function(id, is_dep = TRUE, home_path = HOME_PATH,
         error_code = 40004
       ))
     }
-    printlog(sprintf('vids used for induced subgraph: %s', length(vids)))
+    suppressWarnings(printlog(sprintf('vids used for induced subgraph: %s', length(vids))))
     
     g <- induced_subgraph(.graphCampus, vids = vids, impl = 'auto')
-    printlog(sprintf('graph get: %s -- %s', gorder(g), gsize(g)))
+    suppressWarnings(printlog(sprintf('graph get: %s -- %s', gorder(g), gsize(g))))
     
     graph_centr <- graphCentrGet(g)
-    printlog(sprintf('graph level centralization caculated'))
+    suppressWarnings(printlog(sprintf('graph level centralization caculated')))
     
     g <- nodeCentrAdd(g)
-    printlog(sprintf('node level attributes caculated'))
+    suppressWarnings(printlog(sprintf('node level attributes caculated')))
     
     list(graph_centr = graph_centr, 
          node_attr = dplyr::as_tibble(vertex_attr(g)), 
@@ -125,11 +127,30 @@ graphGet <- function(id, is_dep = TRUE, home_path = HOME_PATH,
                            dplyr::as_tibble(edge_attr(g))))
     
   }, error = function(e) {
-    printlog(sprintf('error: %s', e$message))
+    suppressWarnings(printlog(sprintf('error: %s', e$message)))
     list(error_msg = e$message, error_code = 40099)
   })
 }
 
+# get average centralization of all induced graph, which is calculated offline
+graphAvgCentrRead <- function(home_path = HOME_PATH) {
+  
+  tryCatch({
+    
+    # suppressPackageStartupMessages({
+    #   library(luzlogr)
+    # })
+    # openlog(file.path(home_path, 'graphAvgCentrRead.log'), append = TRUE)
+    # on.exit(closelog(sessionInfo = FALSE), add = TRUE)
+    
+    graph_avg_centr <- readRDS(file.path(home_path, 'rds/graphAvgCentr.rds'))
+    as.list(graph_avg_centr)
+    
+  }, error = function(e) {
+    # printlog(sprintf('error: %s', e$message))
+    list(error_msg = e$message, error_code = 40099)
+  })
+}
 
 # api filter -------------------------------------------------------------
 
@@ -156,6 +177,16 @@ graphGetFilter <- function(request, response) {
   #'         - FALSE
   #'     example: "TRUE"
   #'     required: true
+  #'   - name: "loglevel"
+  #'     description: 是否打印日志，供调试使用
+  #'     in: query
+  #'     schema:
+  #'       type: integer
+  #'       enum: 
+  #'         - 0
+  #'         - 1
+  #'     example: 0
+  #'     required: false
   #' responses:
   #'   200:
   #'     description: 正常返回
@@ -186,6 +217,7 @@ graphGetFilter <- function(request, response) {
   library(RestRserve)
   library(jsonlite)
   
+  # check is_dep parameter if be provided or valid
   if (!'is_dep' %in% names(request$query)) {
     return(RestRserveResponse$new(
       body = toJSON(list(error_msg = 'Parameter is_dep is required.', 
@@ -207,6 +239,7 @@ graphGetFilter <- function(request, response) {
     }
   }
   
+  # check id parameter if be provided or valid
   if (!'id' %in% names(request$query)) {
     return(RestRserveResponse$new(
       body = toJSON(list(error_msg = 'Parameter id is required.', 
@@ -228,7 +261,23 @@ graphGetFilter <- function(request, response) {
     }
   }
   
-  result <- graphGet(id, is_dep)
+  # check loglevel parameter if be provided or valid
+  if (!'loglevel' %in% names(request$query)) {
+    loglevel <- 0
+  } else {
+    loglevel <- as.integer(request$query[['loglevel']])
+    if (is.na(loglevel) | is.null(loglevel)) {
+      return(RestRserveResponse$new(
+        body = toJSON(list(error_msg = 'Parameter loglevel is invalid.', 
+                           error_code = 40002), 
+                      auto_unbox = TRUE), 
+        content_type = 'application/json', 
+        status_code = 400L
+      ))
+    }
+  }
+  
+  result <- graphGet(id, is_dep, loglevel)
   if ('error_code' %in% names(result)) {
     return(RestRserveResponse$new(
       body = toJSON(result, auto_unbox = TRUE), 
@@ -243,4 +292,56 @@ graphGetFilter <- function(request, response) {
     ))
   }
   
+}
+
+graphAvgCentrReadFilter <- function(request, response) {
+  
+  #' ---
+  #' summary: 提取所有子图平均指标API
+  #' description: 该API用于提取graphCampus的所有子图的图级别指标平均值，该平均值通过离线计算完成
+  #' 
+  #' responses:
+  #'   200:
+  #'     description: 正常返回
+  #'     content:
+  #'       application/json:
+  #'   400:
+  #'     description: 入参错误
+  #'     content:
+  #'       application/json:
+  #'         schema:
+  #'           properties:
+  #'             error_msg:
+  #'               type: string
+  #'             error_code:
+  #'               type: string
+  #'   500:
+  #'     description: 内部计算错误
+  #'     content:
+  #'       text/plain:
+  #'         schema:
+  #'           properties:
+  #'             error_msg:
+  #'               type: string
+  #'             error_code:
+  #'               type: string
+  #' ---
+  
+  library(RestRserve)
+  library(jsonlite)
+  
+  result <- graphAvgCentrRead()
+  if ('error_code' %in% names(result)) {
+    return(RestRserveResponse$new(
+      body = toJSON(result, auto_unbox = TRUE), 
+      content_type = 'application/json', 
+      status_code = 400L
+    ))
+  } else {
+    return(RestRserveResponse$new(
+      body = toJSON(result, auto_unbox = TRUE, na = 'null', null = 'null'), 
+      content_type = 'application/json', 
+      status_code = 200L
+    ))
+  }
 }
