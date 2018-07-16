@@ -52,21 +52,33 @@ grid.arrange(xdensity, blankplot, xyscatter, ydensity,
 
 # 如何绘制地图
 ```r
-# download from http://www.gadm.org/country
-chn_adm <- read_rds('CHN_adm1.rds')
+# download from http://www.diva-gis.org/gdata
+# 由于众所周知的原因，China和Taiwan的数据文件都需要下载
+shape_china_mainland_adm <- readShapeSpatial('CHN_adm1.shp')
+shape_taiwan_adm <- readShapeSpatial('TWN_adm1.shp')
 
-province <- data.frame(NAME_1 = chn_adm@data$NAME_1, 
-                       value = rnorm(31), 
-                       stringsAsFactors = FALSE)
-border <- fortify(chn_adm)
-border$id <- as.integer(border$id)
+province <- tibble(NAME_1 = c(as.character(shape_china_mainland_adm@data$NAME_1), 
+                              'Taiwan'), 
+                   value = rnorm(32))
 
-df <- left_join(border, chn_adm@data, by = c('id' = 'OBJECTID'))
+shape_china_mainland <- shape_china_mainland_adm %>% 
+  fortify() %>% 
+  left_join(select(shape_china_mainland_adm@data, ID_1, NAME_1) %>% 
+              mutate(ID_1 = as.character(ID_1 - 1)), 
+            by = c('id' = 'ID_1'))
 
-df <- left_join(df, province)
+shape_taiwan <- shape_taiwan_adm %>% 
+  fortify() %>% 
+  mutate(NAME_1 = 'Taiwan')
 
-ggplot(df, aes(long, lat, group = group)) + 
-  geom_polygon(color = 'white', aes(fill = value)) + 
+shape_china <- bind_rows(shape_china_mainland, shape_taiwan) %>% 
+  mutate(NAME_1 = as.character(NAME_1)) %>% 
+  left_join(province, by = 'NAME_1')
+
+shape_china %>% 
+  ggplot(aes(x = long, y = lat, group = group)) + 
+  geom_polygon(aes(fill = value)) + 
+  scale_fill_viridis_c() + 
   theme(panel.background = element_blank(), 
         axis.ticks = element_blank(), 
         axis.text = element_blank()) + 
