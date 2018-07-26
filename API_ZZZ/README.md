@@ -1,3 +1,11 @@
+### 目录结构
+多项目的目录结构如下
+![目录结构](tree.png)
+以项目utqe为例：
+**`Dockerfile`**：构建该项目环境的镜像制作文件
+**`pkg`**：制作镜像时所需离线安装包的源码和索引等文件
+**`RestRserve`**：容器启动后需要挂载的目录，包括了功能和路由函数的`api_*.R`文件以及定义端点、数据库连接、全局变量等的`RestRserve.R`文件，其他数据文件也放置于此，便于容器启动时挂载
+
 ### 离线安装R包的准备工作
 ```R
 getPackages <- function(packs){
@@ -40,9 +48,8 @@ RestRserveApp$run(http_port = "8000",
                   remote = 'enable')
 ```
 
-Docker启动，api_*.R为定义了各接口函数的脚本，`~/docker/PROJECT_PATH/RestRserve`目录下包括接口函数脚本和所需要的rds文件
 ```bash
 $ sudo docker run --rm -e TZ=Asia/Shanghai -p 8000:8000 -v $HOME/docker/PROJECT_PATH/RestRserve:/home/rstudio/ -d PROJECT_IMAGE 
 ```
 
-注意修改RestRserve.R脚本起始的`HOME_PATH`为`/home/rstudio`
+注意修改`RestRserve.R`脚本起始的`HOME_PATH`为`/home/rstudio`
