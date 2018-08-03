@@ -1,6 +1,6 @@
-FROM r-base
+FROM rocker/r-ver
 COPY pkg /pkg
-RUN apt-get update \
+RUN apt-get update \ 
     && apt-get install -y libcurl4-openssl-dev libssl-dev libmariadbclient-dev
 RUN R -e "\
 install.packages(c('pool', 'RMySQL', 'jsonlite', 'purrr', 'Rserve', 'R6', \
@@ -9,4 +9,4 @@ install.packages(c('pool', 'RMySQL', 'jsonlite', 'purrr', 'Rserve', 'R6', \
                     type = 'source', contriburl = 'file:///pkg');\
 devtools::install_local(path = '/pkg/RestRserve');"
 EXPOSE 8002
-CMD Rscript /home/rstudio/RestRserve.R
+CMD Rscript /home/rstudio/RestRserve.R --vanilla

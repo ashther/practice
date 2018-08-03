@@ -15,7 +15,7 @@ source(file.path(HOME_PATH, 'endpoint_table_params.R'))
 
 pool <- pool::dbPool(
   RMySQL::MySQL(), 
-  host     = '192.168.126.128', 
+  host     = '192.168.15.128', 
   port     = 3306, 
   username = 'api_card', 
   password = '123456', 

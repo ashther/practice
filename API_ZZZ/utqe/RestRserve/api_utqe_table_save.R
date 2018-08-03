@@ -85,7 +85,7 @@ utqe_table_save_filter <- function(request, response) {
   library(jsonlite)
   
   endpoint <- gsub('/save$', '', request$path)
-  body <- fromJSON(rawToChar(request$body))
+  body <- fromJSON(gsub('^data=', '', URLdecode(rawToChar(request$body))))
   opt_params <- endpoint_table_params[[endpoint]]$opt_params
   table_name <- endpoint_table_params[[endpoint]]$table_name
 
@@ -96,7 +96,7 @@ utqe_table_save_filter <- function(request, response) {
       body = toJSON(list(errorMsg = 'Parameter id must be supplied.', 
                          errorCode = 40001), 
                     auto_unbox = TRUE), 
-      content_type = 'application/json', 
+      content_type = 'application/json',
       status_code = 400L, 
       headers = 'Access-Control-Allow-Origin:*'
     ))

@@ -39,7 +39,7 @@ utqe_table_delete_filter <- function(request, response) {
   # check required parameters ----------------------------------------------
   
   endpoint <- gsub('/delete$', '', request$path)
-  body <- fromJSON(rawToChar(request$body))
+  body <- fromJSON(gsub('^data=', '', URLdecode(rawToChar(request$body))))
   table_name <- endpoint_table_params[[endpoint]]$table_name
   
   if (!'id' %in% names(body)) {
