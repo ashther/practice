@@ -1,0 +1,25 @@
+version: '3'
+services:
+
+  utqe-plumber:
+    image: api_utqe:plumber
+    environment: 
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./utqe-plumber/plumber:/home/rstudio
+    expose: 
+      - "8002"
+    restart: always
+      
+  lb:
+    image: dockercloud/haproxy
+    environment:
+      - STATS_AUTH="admin:admin"
+      - STATS_PORT=1936
+    links:
+      - utqe-plumber
+    ports:
+      - "8002:80"
+      - "1936:1936"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
