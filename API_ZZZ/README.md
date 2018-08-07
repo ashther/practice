@@ -37,6 +37,7 @@ tools::write_PACKAGES('~/docker/PROJECT_PATH/pkg/', verbose = TRUE)
 
 #### 以项目utqe-plumber为例：<br/>
 <div align=center><img src="utqe-plumber-dir.png"/></div>
+
 + **`Dockerfile`**：构建该项目环境的镜像制作文件
 + **`pkg`**：制作镜像时所需离线安装包的源码和索引等文件
 + **`plumber`**：容器启动后需要挂载的目录，包括了功能函数的`function.R`和定义全局变量、数据库连接、端点、过滤器函数的`api.R`文件以及用于启动的`plumber.R`文件，其他数据文件也放置于此，便于容器启动时挂载
@@ -45,6 +46,7 @@ tools::write_PACKAGES('~/docker/PROJECT_PATH/pkg/', verbose = TRUE)
 
 #### 以项目utqe-RestRserve为例：<br/>
 <div align=center><img src="utqe-RestRserve-dir.png"/></div>
+
 + **`Dockerfile`**：构建该项目环境的镜像制作文件
 + **`pkg`**：制作镜像时所需离线安装包的源码和索引等文件
 + **`RestRserve`**：容器启动后需要挂载的目录，包括了功能和路由函数的`api_*.R`文件以及定义端点、数据库连接、全局变量等的`RestRserve.R`文件，其他数据文件也放置于此，便于容器启动时挂载
