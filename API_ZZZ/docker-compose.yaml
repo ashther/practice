@@ -1,7 +1,7 @@
 version: '3'
 services:
 
-  utqe-plumber:
+  utqe:
     image: api_utqe:plumber
     environment: 
       - TZ=Asia/Shanghai
@@ -10,19 +10,46 @@ services:
     expose: 
       - "8002"
     restart: always
+  
+  udas:
+    image: api_udas
+    environment: 
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./udas/plumber:/home/rstudio
+    expose: 
+      - "8001"
+    restart: always
       
-  lb:
+  lb-utqe:
     image: dockercloud/haproxy
     environment:
       - STATS_AUTH="admin:admin"
       - STATS_PORT=1936
     links:
-      - utqe-plumber
+      - utqe
     ports:
       - "8002:80"
       - "1936:1936"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
-      - utqe-plumber
+      - utqe
     restart: always
+    
+  lb-udas:
+    image: dockercloud/haproxy
+    environment:
+      - STATS_AUTH="admin:admin"
+      - STATS_PORT=1937
+    links:
+      - udas
+    ports:
+      - "8001:80"
+      - "1937:1937"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - udas
+    restart: always
+
