@@ -2,6 +2,7 @@
 library(RMySQL)
 library(dplyr)
 library(tidyr)
+library(memoise)
 
 # HOME_PATH <- '/home/ashther/udas'
 LOG_PATH <- file.path(HOME_PATH, 'logger')
@@ -74,4 +75,8 @@ sqlFill <- function(sql) {
     sql <- sub(' AND ', ' WHERE ', sql, ignore.case = TRUE)
   }
   sql
+}
+
+if(!is.memoised(dbGetQuery)) {
+  dbGetQuery <- memoise(DBI::dbGetQuery, ~timeout(30))
 }
