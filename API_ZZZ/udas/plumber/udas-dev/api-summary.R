@@ -38,9 +38,37 @@ function(req) {
   plumber::forward()
 }
 
+#* 概览 报考科类
+#* @param lqnf:int
+#* @get /peopleKlCount
+function(req, res, lqnf) {
+  tryCatch({
+    year <- as.integer(lqnf)
+    stopifnot(!is.na(year))
+    
+    sql <- "
+    SELECT kl,
+           count(*) AS n
+    FROM ks_lqb
+    WHERE lqnf = ?year
+    GROUP BY kl
+    ORDER BY n DESC;"
+    sql <- sqlInterpolate(pool, sql, year = year)
+    temp <- suppressWarnings(dbGetQuery(pool, sql))
+    result <- klTransfer(temp)
+    
+    res_logger(req, res)
+    return(result)
+    
+  }, error = function(e) {
+    res$status <- 400L
+    res_logger(req, res, e$message)
+    e$message
+  })
+}
+
 #* 概览 报考人数（录取人数）
 #* @get /peopleCount
-#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     
@@ -50,8 +78,7 @@ function(req, res) {
            round(AVG(zf), 2) AS scoreAvg
     FROM ks_lqb
     GROUP BY lqnf;"
-    temp <- dbGetQuery(pool, sql)
-    
+    temp <- suppressWarnings(dbGetQuery(pool, sql))
     result <- yearFill(temp)
     
     res_logger(req, res)
@@ -67,7 +94,6 @@ function(req, res) {
 #* 概览 生源结构 性别 民族 区域 政治面貌
 #* @param lqnf:int
 #* @get /source
-#* @serializer unboxedJSON
 function(req, res, lqnf) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -143,7 +169,6 @@ function(req, res, lqnf) {
 #* 概览 学院与专业
 #* @param lqnf
 #* @get /peopleMajorCount
-#* @serializer unboxedJSON
 function(req, res, lqnf) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -153,7 +178,8 @@ function(req, res, lqnf) {
     SELECT yxsmc,
        COUNT(*) AS n
     FROM bks_xjb
-    WHERE SUBSTR(rxny, 1, 4) = ?year
+    WHERE SUBSTR(xh, 2, 4) = ?year
+    AND xsdqztm = '01' 
     GROUP BY yxsmc
     ORDER BY n DESC;"
     sql <- sqlInterpolate(pool, sql, year = year)

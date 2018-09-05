@@ -54,12 +54,21 @@ area <- tidyr::unnest(tibble::enframe(list(
   '港澳台' = c('香港特别行政区', '澳门特别行政区', '台湾省')
 )))
 
-kl <- c('全部', dbGetQuery(pool, 'select distinct kl from ks_lqb;')$kl)
+zgfs_reason <- dplyr::tibble(
+  code = c('dasysfsfyz','dabyzxmcsfyz','sfzhsfyz','zpxmsfyz','daywtg','xmywbg','ywyc','ywwgjf'), 
+  name = c('档案生源省份不一致','档案毕业中学名称不一致','身份证号不一致',
+           '照片相貌不一致','档案有涂改','姓名有变更','有异常', '有违规加分')
+)
+
+#kl <- c('全部', dbGetQuery(pool, 'select distinct kl from ks_lqb;')$kl)
+kl <- c('全部', '理工', '文史', '艺术', '体育', '其他')
 lqlx <- c('全部', dbGetQuery(pool, 'select distinct lqlx from ks_lqb;')$lqlx)
 zymc <- c('全部', dbGetQuery(pool, 'select distinct zymc from ks_lqb;')$zymc)
 dwmc <- c('全部', dbGetQuery(pool, 'select distinct dwmc from jzg_jbsjb;')$dwmc)
 
 # selection --------------------------------------------------------------
+
+futile.logger::flog.info('selection')
 
 temp <- GET(paste0(url_port, '/selection/area'))
 stop_for_status(temp)
@@ -75,25 +84,31 @@ stopifnot(all(zczk %in% temp))
 year <- year2seq(dbGetQuery(pool, 'select distinct lqnf from ks_lqb;')$lqnf)
 temp <- GET(paste0(url_port, '/selection/lqnf'))
 stop_for_status(temp)
-temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$year
+temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$lqnf
 stopifnot(all(year == temp))
 
 year <- year2seq(dbGetQuery(pool, 'select distinct xn from bks_zcb;')$xn)
-temp <- GET(paste0(url_port, '/selection/xn'))
+temp <- GET(paste0(url_port, '/selection/xnZc'))
 stop_for_status(temp)
-temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$year
+temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$xn
+stopifnot(all(year == temp))
+
+year <- year2seq(dbGetQuery(pool, 'select distinct substr(xh, 2, 4) as xn from bks_zgfsb;')$xn)
+temp <- GET(paste0(url_port, '/selection/xnFs'))
+stop_for_status(temp)
+temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$xn
 stopifnot(all(year == temp))
 
 year <- year2seq(dbGetQuery(pool, 'select distinct substr(ydrq, 1, 4) from bks_xjydb;')[, 1])
 temp <- GET(paste0(url_port, '/selection/ydrq'))
 stop_for_status(temp)
-temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$year
+temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$ydrq
 stopifnot(all(year == temp))
 
 temp <- GET(paste0(url_port, '/selection/kl'))
 stop_for_status(temp)
-temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$kl
-stopifnot(all(kl %in% temp))
+# temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$kl
+# stopifnot(all(kl %in% temp))
 
 temp <- GET(paste0(url_port, '/selection/lqlx'))
 stop_for_status(temp)
@@ -110,7 +125,17 @@ stop_for_status(temp)
 temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$dwmc
 stopifnot(all(dwmc %in% temp, na.rm = TRUE))
 
+temp <- GET(paste0(url_port, '/selection/zgfs'))
+stop_for_status(temp)
+temp <- fromJSON(content(temp, 'text', encoding = 'utf-8'))$zgfs
+stopifnot(all(zgfs_reason$name %in% temp, na.rm = TRUE))
+
 # summary ----------------------------------------------------------------
+
+futile.logger::flog.info('summary')
+
+temp <- GetError('/summary/peopleKlCount', list(lqnf = 'test'), list(lqnf = 2017))
+stopifnot(all(temp$kl %in% kl))
 
 temp <- GET(paste0(url_port, '/summary/peopleCount'))
 stop_for_status(temp)
@@ -128,9 +153,11 @@ stopifnot(all(yxsmc %in% temp$yxsmc))
 
 # matriculation ----------------------------------------------------------
 
+futile.logger::flog.info('matriculation')
+
 temp <- GetError('/matriculation/source/structure', 
                  list(lqnf = 'test'), list(lqnf = 2017))
-stopifnot(all(c('area', 'sex', 'kl', 'isIn') %in% names(temp)))
+stopifnot(all(c('area', 'sex', 'kl', 'isIn', 'zzmm') %in% names(temp)))
 
 temp <- GetError('/matriculation/source/province', 
                  list(lqnf = 'test'), list(lqnf = 2017))
@@ -139,10 +166,11 @@ stopifnot(all(temp$area %in% area$value))
 temp <- GetError('/matriculation/source/province/detail', 
                  list(lqnf = 'test', area = '甘肃省'), 
                  list(lqnf = 2017, area = '甘肃省'))
-stopifnot(all(c('kl', 'sex', 'score') %in% names(temp)))
+stopifnot(all(c('kl', 'scoreMax', 'scoreMin', 'scoreAvg', 'lqlx', 'n') %in% colnames(temp)))
 
 temp <- GetError('/matriculation/source/major', 
-                 list(lqnf = 'test'), list(lqnf = 2017))
+                 list(lqnf = 'test', kl = '理工', lqlx = '其他统考生'), 
+                 list(lqnf = 2017, kl = '理工', lqlx = '其他统考生'))
 stopifnot(all(temp$zymc %in% zymc))
 
 temp <- GetError('/matriculation/source/major/detail', 
@@ -177,6 +205,9 @@ stopifnot(nrow(temp) > 0)
 
 temp <- GetError('/matriculation/count/summary/top', list(lqnf = 'test'), list(lqnf = 2017))
 stopifnot(all(c('thisYearTop', 'yoyMaxTop', 'yoyMinTop', 'areaSum') %in% names(temp)))
+
+temp <- GetError('/matriculation/count/summary/province', list(lqnf = 'test'), list(lqnf = 2017))
+stopifnot(all(temp$area %in% area$value))
 
 temp <- GET(paste0(url_port, '/matriculation/count/province'))
 stop_for_status(temp)
@@ -221,22 +252,52 @@ stopifnot(all(setdiff(temp$zymc, '未知') %in% zymc))
 
 # enroll -----------------------------------------------------------------
 
-temp <- GetError('/enroll/regist/summary/info', list(xn = 'test'), list(xn = 2017))
-stopifnot(all(c('total', 'pass', 'prob') %in% names(temp)))
-stopifnot(is.numeric(temp$prob) && temp$prob >= 0 && temp$prob <= 1)
+futile.logger::flog.info('enroll')
 
-temp <- GetError('/enroll/regist/summary/probProvince', list(xn = 'test'), list(xn = 2017))
+temp <- GetError('/enroll/review/summary/info', list(xn = 'test'), list(xn = 2017))
+stopifnot(all(c('total', 'pass', 'noPass', 'nReason', 'prob') %in% names(temp)))
+
+temp <- GetError('/enroll/review/summary/reason', list(zgfs = 'test'), list(zgfs = '全部'))
+stopifnot(nrow(temp) > 0)
+
+temp <- GetError('/enroll/review/summary/province', 
+                 list(xn = 'test', item = '通过率'), 
+                 list(xn = 2017, item = '通过率'))
 stopifnot(all(setdiff(temp$area, '其他') %in% area$value))
 
-temp <- GetError('/enroll/regist/summary/probYear', NULL, list(area = '甘肃省'))
+temp <- GetError('/enroll/review/summary/trend', 
+                 list(area = 'test', item = 'test'), 
+                 list(area = '甘肃省', item = '通过率'))
+stopifnot(nrow(temp) > 0)
+
+temp <- GetError('/enroll/review/detail', 
+                 list(xn = 'test', area = '甘肃省', item = '通过'), 
+                 list(xn = 2017, area = '甘肃省', item = '通过'))
+stopifnot(nrow(temp) > 0)
+
+temp <- GetError('/enroll/regist/summary/info', list(xn = 'test'), list(xn = 2017))
+stopifnot(all(c('total', 'pass', 'prob', 'noRegist', 'noCheckin') %in% names(temp)))
+stopifnot(is.numeric(temp$prob) && temp$prob >= 0 && temp$prob <= 1)
+
+temp <- GetError('/enroll/regist/summary/status', list(zczk = ''), list(zczk = '全部'))
+stopifnot(nrow(temp) > 0)
+
+temp <- GetError('/enroll/regist/summary/province', 
+                 list(xn = 'test', item = '通过率'), 
+                 list(xn = 2017, item = '通过率'))
+stopifnot(all(setdiff(temp$area, '其他') %in% area$value))
+
+temp <- GetError('/enroll/regist/summary/trend', NULL, list(area = '甘肃省', item = '通过率'))
 stopifnot(nrow(temp) > 0)
 
 temp <- GetError('/enroll/regist/detail', 
-                 list(xn = 'test', area = '甘肃省', zczk = '未注册'), 
-                 list(xn = 2017, area = '甘肃省', zczk = '未注册'))
+                 list(xn = 'test', area = '甘肃省', item = '未通过'), 
+                 list(xn = 2017, area = '甘肃省', item = '未通过'))
 stopifnot(nrow(temp) > 0)
 
 # teach ------------------------------------------------------------------
+
+futile.logger::flog.info('teach')
 
 temp <- GetError('/teach/resource/college', NULL, list(dwmc = '物理科学与技术学院'))
 stopifnot(nrow(temp) > 0)

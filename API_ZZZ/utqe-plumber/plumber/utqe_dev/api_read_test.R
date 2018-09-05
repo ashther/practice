@@ -15,41 +15,49 @@ con <- pool::poolCheckout(pool)
 DBI::dbSendQuery(con, 'set names utf8')
 pool::poolReturn(con)
 
-base_url <- paste0(url_port, '/faculty/institution')
+base_url <- paste0(url_port, '/normal/condition')
 temp <- GET(paste0(url_port, '/test/test'), query = list(pageIndex = 1))
-stopifnot(status_code(temp) == 404L)
-stopifnot(content(temp)$errorCode == 40000)
+stopifnot(status_code(temp) == 400L)
+stopifnot(content(temp) == 'Resource not found.')
 
 temp <- GET(base_url, query = list(pageIndex = 1))
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40001)
+stopifnot(content(temp) == '缺少参数\"pageSize\",也没有缺省值')
 
 temp <- GET(base_url, query = list(pageSize = 10))
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40001)
+stopifnot(content(temp) == "缺少参数\"pageIndex\",也没有缺省值")
 
-temp <- GET(base_url, query = list(pageIndex = 1, pageSize = 10, PXZS = 'test'))
+temp <- GET(base_url, query = list(year = 2017))
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40002)
+stopifnot(content(temp) == "缺少参数\"pageIndex\",也没有缺省值")
 
-temp <- GET(base_url, query = list(pageIndex = -1, pageSize = 10))
+temp <- GET(base_url, query = list(pageIndex = 1, pageSize = 10, year = 2017, JXALKALS = 'test'))
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40003)
+stopifnot(content(temp) == "Parameters type is invalid.")
 
-temp <- GET(base_url, query = list(pageIndex = 1, pageSize = -10))
+temp <- GET(base_url, query = list(pageIndex = -1, pageSize = 10, year = 2017))
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40003)
+stopifnot(content(temp) == "pageIndex must be positive integer.")
 
-ori_rows <- purrr::map_dbl(dbListTables(pool), function(x) {
+temp <- GET(base_url, query = list(pageIndex = 1, pageSize = -10, year = 2017))
+stopifnot(status_code(temp) == 400L)
+stopifnot(content(temp) == "pageSize must be positive integer.")
+
+temp <- GET(base_url, query = list(pageIndex = 1, pageSize = 10, year = -2017))
+stopifnot(status_code(temp) == 400L)
+stopifnot(content(temp) == "year must be positive integer.")
+
+ori_rows <- purrr::map_dbl(setdiff(dbListTables(pool), 'sys_dict'), function(x) {
   dbGetQuery(pool, sprintf('select count(*) from %s', x))[1, 1]
 })
 
-api_rows <- dbListTables(pool) %>% 
+api_rows <- setdiff(dbListTables(pool), 'sys_dict') %>% 
   stringr::str_replace_all('_', '/') %>% 
   sprintf(paste0(url_port, '/%s'), .) %>% # change this to call API
   purrr::map_dbl(function(x) {
     tryCatch({
-      temp <- GET(x, query = list(pageIndex = 1, pageSize = 10))
+      temp <- GET(x, query = list(pageIndex = 1, pageSize = 10, year = 2017))
       stop_for_status(temp)
       temp <- content(temp)
       # stopifnot(temp$rows_total == length(temp$data))

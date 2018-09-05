@@ -7,7 +7,12 @@ LOG_LEVEL <- futile.logger::INFO
 futile.logger::flog.threshold(LOG_LEVEL)
 futile.logger::flog.appender(futile.logger::appender.file(LOG_PATH), 
                              name = 'api_utqe')
-res_logger <- function(req, res, code = NULL, msg = NULL) {
+layout_custom <- futile.logger::layout.format(
+  '~l [~t] ~m', datetime.fmt = '%Y-%m-%d %H:%M:%OS3'
+)
+futile.logger::flog.layout(layout_custom, name = 'api_utqe')
+
+res_logger <- function(req, res, msg = NULL) {
   if (as.integer(res$status) == 200) {
     futile.logger::flog.info(
       '{"uuid":"%s","status":"%s","msg":"response successfully"}',
@@ -18,10 +23,9 @@ res_logger <- function(req, res, code = NULL, msg = NULL) {
     plumber::forward()
   } else {
     futile.logger::flog.error(
-      '{"uuid":"%s","status":"%s","code":"%s","msg":"%s"}',
+      '{"uuid":"%s","status":"%s","msg":"%s"}',
       req$cookies$uuid,
       res$status,
-      code,
       msg, 
       name = 'api_utqe'
     )
@@ -83,12 +87,55 @@ function(req) {
   plumber::forward()
 }
 
+#* selection year
+#* @get /selection/year
+function(req, res) {
+  library(RMySQL)
+  
+  tryCatch({
+    
+    sql <- 'select distinct `year` from universityInfo_info;'
+    result <- dbGetQuery(pool, sql)[, 1]
+    result <- sort(result, decreasing = TRUE)
+    
+    res_logger(req, res)
+    list(itemName = result)
+    
+  }, error = function(e) {
+    res$status <- 400L
+    res_logger(req, res, e$message)
+    e$message
+  })
+}
+
+#* read selection from table sys_dict
+#* @get /selection/<type_code>
+function(type_code, req, res) {
+  library(RMySQL)
+  
+  tryCatch({
+    
+    sql <- 'select item_name from sys_dict where type_code = ?type_code;'
+    sql <- sqlInterpolate(pool, sql, type_code = type_code)
+    result <- dbGetQuery(pool, sql)[, 1]
+    
+    res_logger(req, res)
+    list(itemName = result)
+    
+  }, error = function(e) {
+    res$status <- 400L
+    res_logger(req, res, e$message)
+    e$message
+  })
+}
+
 #* read table
 #* @param pageIndex int required
 #* @param pageSize int required
+#* @param year int required
 #* @get /<db_name>/<table_name>
 #* @serializer unboxedJSON
-function(pageIndex, pageSize, req, res) {
+function(pageIndex, pageSize, year, req, res) {
   
   tryCatch({
 
@@ -99,36 +146,13 @@ function(pageIndex, pageSize, req, res) {
       gsub('^\\?', '', req$QUERY_STRING)
     )
     if (!endpoint %in% names(endpoint_table_params)) {
-      res$status <- 404L
-      errorCode <- 40000
-      errorMsg <- 'Resource not found.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg, 
-        errorCode = errorCode
-      ))
+      stop('Resource not found.')
     }
     
     table_name <- endpoint_table_params[[endpoint]]$table_name
     req_params <- endpoint_table_params[[endpoint]]$req_params
     opt_params <- endpoint_table_params[[endpoint]]$opt_params
     all_params <- c(req_params, opt_params)
-
-
-# check required paramters existance -------------------------------------
-
-   if (!is.null(req_params)) {
-      if (!all(names(req_params) %in% names(query))) {
-        res$status <- 400L
-        errorCode <- 40001
-        errorMsg <- 'Required parameters must be supplied.'
-        res_logger(req, res, errorCode, errorMsg)
-        return(list(
-          errorMsg = errorMsg, 
-          errorCode = errorCode
-        ))
-      }
-    }
 
 # check required and optional paramters type -----------------------------
 
@@ -139,48 +163,30 @@ function(pageIndex, pageSize, req, res) {
     inter_params <- setNames(inter_params, inter_params_names)
     
     if (any(is.na(inter_params)) | any(is.null(inter_params))) {
-      res$status <- 400L
-      errorCode <- 40002
-      errorMsg <- 'Parameters type is invalid.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg, 
-        errorCode = errorCode
-      ))
+      stop('Parameters type is invalid.')
     }
 
 # call real function -----------------------------------------------------
 
-    params <- query[setdiff(names(query), c('pageIndex', 'pageSize'))]
-    result <- utqe_table_read(table_name, params, pageIndex, pageSize)
-    
-    if ('errorCode' %in% names(result)) {
-      res$status <- 400L
-      res_logger(req, res, result$errorCode, result$errorMsg)
-    } else {
-      res$status <- 200L
-      res_logger(req, res)
-    }
+    params <- query[setdiff(names(query), c('pageIndex', 'pageSize', 'year'))]
+    result <- utqe_table_read(table_name, params, pageIndex, pageSize, year)
+    res_logger(req, res)
     
     return(result)
     
   }, error = function(e) {
     res$status <- 400L
-    errorCode <- 40098
-    errorMsg <- e$message
-    res_logger(req, res, errorCode, errorMsg)
-    list(
-      errorMsg = errorMsg, 
-      errorCode = errorCode
-    )
+    res_logger(req, res, e$message)
+    e$message
   })
 }
 
 #* update and insert into table
 #* @param id int required
+#* @param year int required
 #* @post /<db_name>/<table_name>/save
 #* @serializer unboxedJSON
-function(id, req, res) {
+function(id, year, req, res) {
   
   tryCatch({
 
@@ -190,68 +196,30 @@ function(id, req, res) {
     body <- webutils::parse_query(req$postBody)
     
     if (!endpoint %in% names(endpoint_table_params)) {
-      res$status <- 404L
-      errorCode <- 40000
-      errorMsg <- 'Resource not found.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg,
-        errorCode = errorCode
-      ))
+      stop('Resource not found.')
     }
     
     opt_params <- endpoint_table_params[[endpoint]]$opt_params
     table_name <- endpoint_table_params[[endpoint]]$table_name    
 
 # check id existance and type --------------------------------------------
-
-    if (!'id' %in% names(body)) {
-      res$status <- 400L
-      errorCode <- 40001
-      errorMsg <- 'Parameter id must be supplied.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg,
-        errorCode = errorCode
-      ))
-    }
     
-    row_id <- as.integer(body[['id']])
-    if (is.na(row_id) || is.null(row_id)) {
-      res$status <- 400L
-      errorCode <- 40002
-      errorMsg <- 'Type of parameters id is invalid, it must be integer.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg,
-        errorCode = errorCode
-      ))
-    }
-    
-    if (row_id < 0) {
-      res$status <- 400L
-      errorCode <- 40003
-      errorMsg <- 'Parameters id must be non-negative integer.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg,
-        errorCode = errorCode
-      ))
-    }
+    id <- as.integer(id)
+    stopifnot(!is.na(id), id >= 0)
+    row_id <- id
 
 # check other parameters existance and type ------------------------------
     
-    params <- body[setdiff(names(body), 'id')]
+    if (row_id > 0) {
+      params <- body[setdiff(names(body), 'id')] # may be only year to be updated
+    } else {
+      year <- as.integer(year)
+      stopifnot(!is.na(year), year > 0)
+      params <- body[setdiff(names(body), c('id', 'year'))]
+    }
     
     if (length(params) == 0 || is.na(params) || is.null(params)) {
-      res$status <- 400L
-      errorCode <- 40001
-      errorMsg <- 'Except id, there must be 1 parameter applied at least.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg,
-        errorCode = errorCode
-      ))
+      stop('No parameters to be updated or inserted.')
     }
     
     inter_params_names <- intersect(names(opt_params), names(params))
@@ -261,41 +229,25 @@ function(id, req, res) {
     inter_params <- setNames(inter_params, inter_params_names)
     
     if (any(is.na(inter_params)) | any(is.null(inter_params))) {
-      res$status <- 400L
-      errorCode <- 40002
-      errorMsg <- 'Parameters type is invalid.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg,
-        errorCode = errorCode
-      ))
-    } 
+      stop('Parameters type is invalid.')
+    }
+     
 
 # check update or insert -------------------------------------------------
 
     if (row_id > 0) { # it's update method
       result <- utqe_table_update(table_name, params, row_id)
     } else {
-      result <- utqe_table_insert(table_name, params)
+      result <- utqe_table_insert(table_name, params, year)
     }
-    
-    if ('errorCode' %in% names(result)) {
-      res$status <- 400L
-      res_logger(req, res, result$errorCode, result$errorMsg)
-    } else {
-      res$status <- 200L
-      res_logger(req, res)
-    }
+    res_logger(req, res)
     
     return(result)
     
   }, error = function(e) {
     res$status <- 400L
-    errorCode <- 40098
-    errorMsg <- e$message
-    res_logger(req, res, errorCode, errorMsg)
-    list(errorMsg = errorMsg,
-         errorCode = errorCode)
+    res_logger(req, res, e$message)
+    e$message
   })
 }
 
@@ -306,74 +258,36 @@ function(id, req, res) {
 function(id, req, res) {
   
   tryCatch({
-    
 
 # get info from req ------------------------------------------------------
 
     endpoint <- gsub('/delete$', '', req$PATH_INFO)
-    body <- webutils::parse_query(req$postBody) 
+    # body <- webutils::parse_query(req$postBody) 
     
     if (!endpoint %in% names(endpoint_table_params)) {
-      res$status <- 404L
-      errorCode <- 40000
-      errorMsg <- 'Resource not found.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg, 
-        errorCode = errorCode
-      ))
+      stop('Resource not found.')
     }
     
     table_name <- endpoint_table_params[[endpoint]]$table_name 
 
 # check required parameters ----------------------------------------------
-
-    if (!'id' %in% names(body)) {
-      res$status <- 400L
-      errorCode <- 40001
-      errorMsg <- 'Required parameters must be supplied.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg, 
-        errorCode = errorCode
-      ))
-    }
     
-    row_id <- body[['id']]
+    row_id <- id
     row_id <- unlist(strsplit(trimws(row_id), ','))
     row_id <- as.integer(row_id)
-    if (any(row_id <= 0)|| any(is.na(row_id)) || any(is.null(row_id))) {
-      res$status <- 400L
-      errorCode <- 40002
-      errorMsg <- 'Parameter id must be non-negative integer.'
-      res_logger(req, res, errorCode, errorMsg)
-      return(list(
-        errorMsg = errorMsg, 
-        errorCode = errorCode
-      ))
-    }
+    stopifnot(!is.na(row_id), all(row_id > 0))
 
 # call real function -----------------------------------------------------
 
     result <- utqe_table_delete(table_name, row_id)
-    
-    if ('errorCode' %in% names(result)) {
-      res$status <- 400L
-      res_logger(req, res, result$errorCode, result$errorMsg)
-    } else {
-      res$status <- 200L
-      res_logger(req, res)
-    }
+    res_logger(req, res)
     
     return(result)
     
   }, error = function(e) {
     res$status <- 400L
-    errorCode <- 40098
-    errorMsg <- e$message
-    res_logger(req, res, errorCode, errorMsg)
-    list(errorMsg = errorMsg, 
-         errorCode = errorCode)
+    res_logger(req, res, e$message)
+    e$message
   })
 }
 

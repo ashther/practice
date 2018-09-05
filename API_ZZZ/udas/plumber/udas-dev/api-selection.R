@@ -58,7 +58,6 @@ function(req) {
 
 #* 从字典表获取省级地区
 #* @get /area
-#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     
@@ -83,10 +82,9 @@ function(req, res) {
 
 #* 从字典表获取注册状况
 #* @get /zczk
-#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
-
+    
     zczk <- dbGetQuery(
       pool, 
       "SELECT encode_item_code AS zczkm,
@@ -114,17 +112,17 @@ function(req, res) {
   })
 }
 
-#* 从录取表获取连续的录取年份
+#* 从录取表获取去重录取年份
 #* @get /lqnf
-#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     year_range <- dbGetQuery(pool, 'select distinct lqnf from ks_lqb;')
     year_range <- as.integer(year_range$lqnf)
-    full_year <- seq(min(year_range), max(year_range), 1)
+    # full_year <- seq(min(year_range), max(year_range), 1)
     
     res_logger(req, res)
-    list(lqnf = full_year)
+    # list(lqnf = full_year)
+    list(lqnf = year_range)
     
   }, error = function(e) {
     res$status <- 400L
@@ -133,17 +131,17 @@ function(req, res) {
   })
 }
 
-#* 从注册表获取连续的注册年份
-#* @get /xn
-#* @serializer unboxedJSON
+#* 从注册表获取去重注册年份
+#* @get /xnZc
 function(req, res) {
   tryCatch({
     year_range <- dbGetQuery(pool, 'select distinct xn from bks_zcb;')
     year_range <- as.integer(year_range$xn)
-    full_year <- seq(min(year_range), max(year_range), 1)
+    # full_year <- seq(min(year_range), max(year_range), 1)
     
     res_logger(req, res)
-    list(xn = full_year)
+    # list(xn = full_year)
+    list(xn = year_range)
     
   }, error = function(e) {
     res$status <- 400L
@@ -152,17 +150,36 @@ function(req, res) {
   })
 }
 
-#* 从学籍异动表获取连续的异动年份
+#* 从资格复审表获取去重复审年份
+#* @get /xnFs
+function(req, res) {
+  tryCatch({
+    year_range <- dbGetQuery(pool, 'select distinct substr(xh, 2, 4) as xn from bks_zgfsb;')
+    year_range <- as.integer(year_range$xn)
+    # full_year <- seq(min(year_range), max(year_range), 1)
+    
+    res_logger(req, res)
+    # list(xn = full_year)
+    list(xn = year_range)
+    
+  }, error = function(e) {
+    res$status <- 400L
+    res_logger(req, res, e$message)
+    e$message
+  })
+}
+
+#* 从学籍异动表获取去重异动年份
 #* @get /ydrq
-#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     year_range <- dbGetQuery(pool, 'SELECT DISTINCT SUBSTR(ydrq, 1, 4) as ydrq FROM bks_xjydb;')
     year_range <- as.integer(year_range$ydrq)
-    full_year <- seq(min(year_range), max(year_range), 1)
+    # full_year <- seq(min(year_range), max(year_range), 1)
     
     res_logger(req, res)
-    list(ydrq = full_year)
+    # list(ydrq = full_year)
+    list(ydrq = year_range)
     
   }, error = function(e) {
     res$status <- 400L
@@ -173,16 +190,15 @@ function(req, res) {
 
 #* 从录取表获取所有科类
 #* @get /kl
-#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
-    result <- dbGetQuery(
-      pool, 'SELECT kl, COUNT(*) AS n FROM ks_lqb GROUP BY kl ORDER BY n DESC;'
-    )$kl
-    result <- c('全部', result)
+    # result <- dbGetQuery(
+    #   pool, 'SELECT kl, COUNT(*) AS n FROM ks_lqb GROUP BY kl ORDER BY n DESC;'
+    # )$kl
+    # result <- c('全部', result)
     
     res_logger(req, res)
-    list(kl = result)
+    list(kl = c('全部', '理工', '文史', '艺术', '体育', '其他'))
     
   }, error = function(e) {
     res$status <- 400L
@@ -193,7 +209,6 @@ function(req, res) {
 
 #* 从录取表获取所有录取类型
 #* @get /lqlx
-#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     result <- dbGetQuery(
@@ -213,7 +228,6 @@ function(req, res) {
 
 #* 从录取表获取所有专业名称
 #* @get /zymc
-#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     result <- dbGetQuery(
@@ -233,7 +247,6 @@ function(req, res) {
 
 #* 从教职工表获取所有单位名称
 #* @get /dwmc
-#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     result <- dbGetQuery(
@@ -243,6 +256,22 @@ function(req, res) {
     
     res_logger(req, res)
     list(dwmc = result)
+    
+  }, error = function(e) {
+    res$status <- 400L
+    res_logger(req, res, e$message)
+    e$message
+  })
+}
+
+#* 从资格复审表获取所有复审未通过原因
+#* @get /zgfs
+function(req, res) {
+  tryCatch({
+    result <- c('全部', zgfs_reason$name)
+    
+    res_logger(req, res)
+    list(zgfs = result)
     
   }, error = function(e) {
     res$status <- 400L

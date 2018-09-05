@@ -47,6 +47,12 @@ area <- tidyr::unnest(tibble::enframe(list(
   '港澳台' = c('香港特别行政区', '澳门特别行政区', '台湾省')
 )))
 
+zgfs_reason <- tibble(
+  code = c('dasysfsfyz','dabyzxmcsfyz','sfzhsfyz','zpxmsfyz','daywtg','xmywbg','ywyc','ywwgjf'), 
+  name = c('档案生源省份不一致','档案毕业中学名称不一致','身份证号不一致',
+           '照片相貌不一致','档案有涂改','姓名有变更','有异常', '有违规加分')
+)
+
 # the time-indicate column in df must be character type
 yearFill <- function(df, col = NULL) {
   
@@ -75,6 +81,34 @@ sqlFill <- function(sql) {
     sql <- sub(' AND ', ' WHERE ', sql, ignore.case = TRUE)
   }
   sql
+}
+
+klTransfer <- function(df) {
+  temp <- mutate(df, kl = case_when(
+    kl == '理工' ~ '理工', 
+    kl == '文史' ~ '文史', 
+    grepl('艺术', kl) ~ '艺术', 
+    grepl('体育', kl) ~ '体育', 
+    TRUE ~ '其他'
+  ))
+  temp <- group_by_at(temp, dplyr::vars(-n))
+  temp <- summarise(temp, n = sum(n))
+  arrange(ungroup(temp), desc(n))
+}
+
+klSplit <- function(kl) {
+  if (kl == '全部') {
+    return('')
+  }
+  if (kl %in% c('理工', '文史')) {
+    return(sprintf(" and kl = '%s' ", kl))
+  }
+  if (kl %in% c('艺术', '体育')) {
+    return(sprintf(" and kl like '%s%%' ", kl))
+  }
+  return(" and kl not in ('理工', '文史') 
+          and kl not like '艺术%' 
+          and kl not like '体育%' ")
 }
 
 if(!is.memoised(dbGetQuery)) {

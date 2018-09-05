@@ -3,7 +3,7 @@ library(httr)
 library(dplyr)
 library(RMySQL)
 
-url_port <- 'http://localhost:8000'
+url_port <- 'http://localhost:8002'
 
 pool <- pool::dbPool(RMySQL::MySQL(),
                      host = '192.168.126.128', # change this after ip changed
@@ -15,47 +15,40 @@ con <- pool::poolCheckout(pool)
 DBI::dbSendQuery(con, 'set names utf8')
 pool::poolReturn(con)
 
-base_url <- paste0(url_port, '/universityInfo/info/delete') # add table name
-temp <- GET(paste0(url_port, '/test/test/delete'), query = list(pageIndex = 1))
-stopifnot(status_code(temp) == 404L)
-stopifnot(content(temp)$errorCode == 40000)
+base_url <- paste0(url_port, '/normal/condition/delete') # add table name
+temp <- POST(paste0(url_port, '/test/test/delete'), body = list(pageIndex = 1), encode = 'form')
+stopifnot(status_code(temp) == 400L)
+stopifnot(content(temp) == "Resource not found.")
 
 temp <- POST(base_url, body = list(test = 1), encode = 'form')
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40001)
-stopifnot(content(temp)$errorMsg == 'Required parameters must be supplied.')
+stopifnot(content(temp) == "缺少参数\"id\",也没有缺省值")
 
 temp <- POST(base_url, body = list(id = '1,,2'), encode = 'form')
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40002)
-stopifnot(content(temp)$errorMsg == 'Parameter id must be non-negative integer.')
+stopifnot(content(temp) == "!is.na(row_id) are not all TRUE")
 
 temp <- POST(base_url, body = list(id = '-1'), encode = 'form')
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40002)
-stopifnot(content(temp)$errorMsg == 'Parameter id must be non-negative integer.')
+stopifnot(content(temp) == "all(row_id > 0) is not TRUE")
 
 temp <- POST(base_url, body = list(id = '0'), encode = 'form')
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40002)
-stopifnot(content(temp)$errorMsg == 'Parameter id must be non-negative integer.')
+stopifnot(content(temp) == "all(row_id > 0) is not TRUE")
 
 temp <- POST(base_url, body = list(id = '-2,1'), encode = 'form')
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40002)
-stopifnot(content(temp)$errorMsg == 'Parameter id must be non-negative integer.')
+stopifnot(content(temp) == "all(row_id > 0) is not TRUE")
 
 temp <- POST(base_url, body = list(id = 'test'), encode = 'form')
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40002)
-stopifnot(content(temp)$errorMsg == 'Parameter id must be non-negative integer.')
+stopifnot(content(temp) == "!is.na(row_id) is not TRUE")
 
 temp <- POST(base_url, body = list(id = '99999'), encode = 'form')
 stopifnot(status_code(temp) == 400L)
-stopifnot(content(temp)$errorCode == 40003)
-stopifnot(content(temp)$errorMsg == 'value of parameter id is not in this table.')
+stopifnot(content(temp) == "value of parameter id is not in this table.")
 
-api_rows <- purrr::map_dbl(dbListTables(pool), function(x) {
+api_rows <- purrr::map_dbl(setdiff(dbListTables(pool), 'sys_dict'), function(x) {
   tryCatch({
     max_id <- dbGetQuery(pool, paste0('select max(id) from ', x))[1, 1]
     url <- stringr::str_replace_all(x, '_', '/') %>%
@@ -70,8 +63,8 @@ api_rows <- purrr::map_dbl(dbListTables(pool), function(x) {
   })
 })
 
-ori_rows <- purrr::map_dbl(dbListTables(pool), function(x) {
-  dbGetQuery(pool, paste0('select max(id) from ', x))[1, 1]
+ori_rows <- purrr::map_dbl(setdiff(dbListTables(pool), 'sys_dict'), function(x) {
+  tidyr::replace_na(dbGetQuery(pool, paste0('select max(id) from ', x))[1, 1], 0)
 })
 
 all(api_rows > ori_rows)

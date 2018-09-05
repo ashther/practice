@@ -41,7 +41,6 @@ function(req) {
 #* 教学资源 资源投入
 #* @param dwmc
 #* @get /resource/college
-#* @serializer unboxedJSON
 function(req, res, dwmc) {
   tryCatch({
     

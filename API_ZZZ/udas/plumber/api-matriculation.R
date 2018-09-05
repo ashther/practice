@@ -41,7 +41,6 @@ function(req) {
 #* 新生录取 生源分布 生源结构
 #* @param lqnf:int
 #* @get /source/structure
-#* @serializer unboxedJSON
 function(req, res, lqnf) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -87,6 +86,7 @@ function(req, res, lqnf) {
     ORDER BY n DESC;"
     sql <- sqlInterpolate(pool, sql, year = year)
     kl <- dbGetQuery(pool, sql)
+    kl <- klTransfer(kl)
     
     sql <- "
     SELECT (CASE
@@ -101,12 +101,24 @@ function(req, res, lqnf) {
     sql <- sqlInterpolate(pool, sql, year = year)
     is_in <- dbGetQuery(pool, sql)
     
-    # no wish level pie chart
+    sql <- "
+    SELECT (CASE
+                WHEN length(zzmmdm) = 0 THEN '未知'
+                ELSE zzmmdm
+            END) AS zzmm,
+           count(*) AS n
+    FROM ks_lqb
+    WHERE lqnf = ?year
+    GROUP BY zzmmdm
+    ORDER BY n DESC;"
+    sql <- sqlInterpolate(pool, sql, year = year)
+    zzmm <- dbGetQuery(pool, sql)
     
     res_logger(req, res)
     list(area = area, 
-         sex = sex, 
          kl = kl, 
+         sex = sex, 
+         zzmm = zzmm, 
          isIn = is_in)
     
   }, error = function(e) {
@@ -119,30 +131,38 @@ function(req, res, lqnf) {
 #* 新生录取 生源分布 省份详情 全部地区
 #* @param lqnf
 #* @get /source/province
-#* @serializer unboxedJSON
 function(req, res, lqnf) {
   tryCatch({
     year <- as.integer(lqnf)
     stopifnot(!is.na(year))
     
     sql <- "
-    SELECT dict.area,
-           lqb.n
-    FROM
-      (SELECT syssdm,
-              COUNT(*) AS n
-       FROM ks_lqb
-       WHERE lqnf = ?year
-       GROUP BY syssdm) AS lqb
-    LEFT JOIN
-      (SELECT SUBSTR(encode_item_code, 1, 2) AS syssdm,
-              encode_item_name AS `area`
-       FROM ds_encode_item
-       WHERE encode_type_code = 'B_ZHRMGHGXZQH'
-         AND SUBSTR(encode_item_code, 3, 6) = '0000') AS dict ON lqb.syssdm = dict.syssdm
-    ORDER BY lqb.n DESC;"
+    SELECT syssdm,
+           kl,
+           COUNT(*) AS n
+    FROM ks_lqb
+    WHERE lqnf = ?year
+    GROUP BY syssdm,
+             kl;"
     sql <- sqlInterpolate(pool, sql, year = year)
-    result <- dbGetQuery(pool, sql)
+    area_kl_n <- dbGetQuery(pool, sql)
+    area_kl_n <- klTransfer(area_kl_n)
+    area_kl_n <- add_count(area_kl_n, syssdm, wt = n)
+    
+    sql <- "
+    SELECT SUBSTR(encode_item_code, 1, 2) AS syssdm,
+           encode_item_name AS `area`
+    FROM ds_encode_item
+    WHERE encode_type_code = 'B_ZHRMGHGXZQH'
+      AND SUBSTR(encode_item_code, 3, 6) = '0000';"
+    province <- dbGetQuery(pool, sql)
+    
+    result <- left_join(area_kl_n, province, by = 'syssdm') %>% 
+      select(-syssdm) %>% 
+      spread(kl, n, fill = 0) %>% 
+      arrange(desc(nn)) %>% 
+      rename('实际录取' = nn) %>% 
+      select(area, `实际录取`, `理工`, `文史`, `艺术`, `体育`, `其他`)
     
     res_logger(req, res)
     return(result)
@@ -158,7 +178,6 @@ function(req, res, lqnf) {
 #* @param lqnf
 #* @param area
 #* @get /source/province/detail
-#* @serializer unboxedJSON
 function(req, res, lqnf, area) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -166,43 +185,11 @@ function(req, res, lqnf, area) {
     
     sql <- "
     SELECT kl,
-           COUNT(*) AS n
-    FROM ks_lqb
-    WHERE lqnf = ?year
-      AND syssdm =
-        (SELECT SUBSTR(encode_item_code, 1, 2)
-         FROM ds_encode_item
-         WHERE encode_type_code = 'B_ZHRMGHGXZQH'
-           AND encode_item_name = ?area)
-    GROUP BY kl
-    ORDER BY n DESC;"
-    sql <- sqlInterpolate(pool, sql, year = year, area = area)
-    kl <- dbGetQuery(pool, sql)
-    
-    sql <- "
-    SELECT (CASE LENGTH(sfzh)
-                WHEN 18 THEN IF((SUBSTR(sfzh, 17, 1)%2)=0, '女', '男')
-                WHEN 15 THEN IF((SUBSTR(sfzh, 15, 1)%2)=0, '女', '男')
-                ELSE '未知'
-            END) AS sex,
-           COUNT(*) AS n
-    FROM ks_lqb
-    WHERE lqnf = ?year
-      AND syssdm =
-        (SELECT SUBSTR(encode_item_code, 1, 2)
-         FROM ds_encode_item
-         WHERE encode_type_code = 'B_ZHRMGHGXZQH'
-           AND encode_item_name = ?area)
-    GROUP BY sex
-    ORDER BY n DESC;"
-    sql <- sqlInterpolate(pool, sql, year = year, area = area)
-    sex <- dbGetQuery(pool, sql)
-    
-    sql <- "
-    SELECT kl,
            MAX(zf) AS scoreMax,
+           MIN(zf) AS scoreMin,
            ROUND(AVG(zf), 2) AS scoreAvg,
-           MIN(zf) AS scoreMin
+           lqlx,
+           count(*) AS n
     FROM ks_lqb
     WHERE lqnf = ?year
       AND syssdm =
@@ -210,38 +197,11 @@ function(req, res, lqnf, area) {
          FROM ds_encode_item
          WHERE encode_type_code = 'B_ZHRMGHGXZQH'
            AND encode_item_name = ?area)
-    GROUP BY kl;"
-    sql <- sqlInterpolate(pool, sql, year = year, area = area)
-    score <- dbGetQuery(pool, sql)
-    
-    res_logger(req, res)
-    list(kl = kl, sex = sex, score = score)
-    
-  }, error = function(e) {
-    res$status <- 400L
-    res_logger(req, res, e$message)
-    e$message
-  })
-}
-
-#* 新生录取 生源分布 专业详情 全部专业
-#* @param lqnf
-#* @get /source/major
-#* @serializer unboxedJSON
-function(req, res, lqnf) {
-  tryCatch({
-    year <- as.integer(lqnf)
-    stopifnot(!is.na(year))
-    
-    sql <- "
-    SELECT zymc,
-           COUNT(*) AS n
-    FROM ks_lqb
-    WHERE lqnf = ?year
-    GROUP BY zymc
+    GROUP BY kl,
+             lqlx
     ORDER BY n DESC;"
-    sql <- sqlInterpolate(pool, sql, year = year)
-    result <- dbGetQuery(pool, sql)
+    sql <- sqlInterpolate(pool, sql, year = year, area = area)
+    result <- suppressWarnings(dbGetQuery(pool, sql))
     
     res_logger(req, res)
     return(result)
@@ -253,11 +213,61 @@ function(req, res, lqnf) {
   })
 }
 
-#* 新生录取 生源分布 专业详情 单个专业
+#* 新生录取 生源分布 专业详情
+#* @param lqnf
+#* @param kl
+#* @param lqlx
+#* @get /source/major
+function(req, res, lqnf, kl, lqlx) {
+  tryCatch({
+    year <- as.integer(lqnf)
+    stopifnot(!is.na(year))
+    
+    sql_1 <- "
+    SELECT zymc,
+           syssdm,
+           COUNT(*) AS n
+    FROM ks_lqb
+    WHERE lqnf = ?year 
+      AND lqlx = ?lqlx"
+    
+    sql_kl <- klSplit(kl)
+    
+    sql_2 <- "
+    GROUP BY zymc,
+             syssdm
+    ORDER BY n DESC;"
+    
+    sql <- paste0(sql_1, sql_kl, sql_2)
+    sql <- sqlInterpolate(pool, sql, year = year, lqlx = lqlx)
+    temp <- dbGetQuery(pool, sql)
+    
+    sql <- "
+    SELECT SUBSTR(encode_item_code, 1, 2) AS syssdm,
+           encode_item_name AS `area`
+    FROM ds_encode_item
+    WHERE encode_type_code = 'B_ZHRMGHGXZQH'
+      AND SUBSTR(encode_item_code, 3, 6) = '0000';"
+    province <- dbGetQuery(pool, sql)
+    
+    result <- left_join(temp, province, by = 'syssdm') %>% 
+      select(-syssdm) %>% 
+      spread(area, n, fill = 0)
+    
+    res_logger(req, res)
+    return(result)
+    
+  }, error = function(e) {
+    res$status <- 400L
+    res_logger(req, res, e$message)
+    e$message
+  })
+}
+
+#* 新生录取 生源分布 专业详情 单个专业（弃用）
 #* @param lqnf
 #* @param zymc
 #* @get /source/major/detail
-#* @serializer unboxedJSON
 function(req, res, lqnf, zymc) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -317,7 +327,6 @@ function(req, res, lqnf, zymc) {
 #* @param lqlx
 #* @param item
 #* @get /score/summary/absolute
-#* @serializer unboxedJSON
 function(req, res, lqnf, kl, lqlx, item) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -336,7 +345,7 @@ function(req, res, lqnf, kl, lqlx, item) {
        FROM ks_lqb
        WHERE lqnf = ?year"
     
-    sql_kl <- "AND kl = ?kl"
+    sql_kl <- klSplit(kl)
     sql_lqlx <- "AND lqlx = ?lqlx"
     
     sql_end <- "
@@ -345,10 +354,8 @@ function(req, res, lqnf, kl, lqlx, item) {
     WHERE dict.encode_type_code = 'B_ZHRMGHGXZQH';"
     
     params <- list(year = year)
-    if (kl != '全部') {
-      sql_begin <- paste(sql_begin, sql_kl, sep = ' ')
-      params$kl <- kl
-    }
+    sql_begin <- paste0(sql_begin, sql_kl)
+    
     if (lqlx != '全部') {
       sql_begin <- paste(sql_begin, sql_lqlx, sep = ' ')
       params$lqlx <- lqlx
@@ -356,7 +363,7 @@ function(req, res, lqnf, kl, lqlx, item) {
     sql <- paste(sql_begin, sql_end)
     
     sql <- sqlInterpolate(pool, sql, .dots = params)
-    temp <- dbGetQuery(pool, sql)
+    temp <- suppressWarnings(dbGetQuery(pool, sql))
     if (item == '最高分') {
       result <- rename(select(temp, area, score_max), score = score_max)
     } else if (item == '最低分') {
@@ -381,7 +388,6 @@ function(req, res, lqnf, kl, lqlx, item) {
 #* @param lqnf
 #* @param area
 #* @get /score/province
-#* @serializer unboxedJSON
 function(req, res, lqnf, area) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -412,7 +418,7 @@ function(req, res, lqnf, area) {
     WHERE dict.encode_type_code = 'B_ZHRMGHGXZQH'
       AND dict.encode_item_name = ?area;"
     sql <- sqlInterpolate(pool, sql, year = year, area = area)
-    result <- dbGetQuery(pool, sql)
+    result <- suppressWarnings(dbGetQuery(pool, sql))
     
     res_logger(req, res)
     return(result)
@@ -428,7 +434,6 @@ function(req, res, lqnf, area) {
 #* @param lqnf
 #* @param area
 #* @get /score/major
-#* @serializer unboxedJSON
 function(req, res, lqnf, area) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -462,7 +467,7 @@ function(req, res, lqnf, area) {
     WHERE dict.encode_type_code = 'B_ZHRMGHGXZQH'
       AND dict.encode_item_name = ?area;"
     sql <- sqlInterpolate(pool, sql, year = year, area = area)
-    result <- dbGetQuery(pool, sql)
+    result <- suppressWarnings(dbGetQuery(pool, sql))
     
     res_logger(req, res)
     return(result)
@@ -474,10 +479,9 @@ function(req, res, lqnf, area) {
   })
 }
 
-#* 新生录取 录取人数 概况 省份变迁
+#* 新生录取 录取人数 概况 历史变迁
 #* @param area
 #* @get /count/summary/trend
-#* @serializer unboxedJSON
 function(req, res, area) {
   tryCatch({
     
@@ -508,7 +512,6 @@ function(req, res, area) {
 #* 新生录取 录取人数 概况 top10
 #* @param lqnf
 #* @get /count/summary/top
-#* @serializer unboxedJSON
 function(req, res, lqnf) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -567,20 +570,67 @@ function(req, res, lqnf) {
   })
 }
 
+#* 新生录取 录取人数 概况 横向对比
+#* @param lqnf
+#* @get /count/summary/province
+function(req, res, lqnf) {
+  tryCatch({
+    year <- as.integer(lqnf)
+    stopifnot(!is.na(year))
+    
+    sql <- "
+    SELECT a.area,
+          temp.n
+    FROM
+     (SELECT syssdm,
+             COUNT(*) AS n
+      FROM ks_lqb
+      WHERE lqnf = ?year
+      GROUP BY syssdm) AS temp
+    LEFT JOIN
+     (SELECT SUBSTR(encode_item_code, 1, 2) AS syssdm,
+             encode_item_name AS area
+      FROM ds_encode_item
+      WHERE encode_type_code = 'B_ZHRMGHGXZQH'
+        AND SUBSTR(encode_item_code, 3, 4) = '0000') AS a ON temp.syssdm = a.syssdm;"
+    sql <- sqlInterpolate(pool, sql, year = year)
+    result <- dbGetQuery(pool, sql)
+    
+    res_logger(req, res)
+    return(result)
+    
+  }, error = function(e) {
+    res$status <- 400L
+    res_logger(req, res, e$message)
+    e$message
+  })
+}
+
 #* 新生录取 录取人数 省份详情
 #* @get /count/province
-#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     
     sql <- "
     SELECT syssdm,
-           lqnf as year,
+           lqnf AS year,
            COUNT(*) AS n
-    FROM ks_lqb
+    FROM ks_lqb 
     GROUP BY syssdm,
              lqnf;"
-    area_year_n <- dbGetQuery(pool, sql)
+    area_year_n <- dbGetQuery(pool, sql) %>% 
+      mutate(year = as.integer(year))
+    
+    year_max <- max(area_year_n$year)
+    year_full <- seq(year_max - 19, year_max, 1)
+    area_year_n <- expand.grid(
+      unique(area_year_n$syssdm), 
+      year_full, 
+      stringsAsFactors = FALSE
+    ) %>% 
+      setNames(c('syssdm', 'year')) %>% 
+      left_join(area_year_n, by = c('syssdm', 'year')) %>% 
+      mutate(n = replace_na(n, 0))
     
     sql <- "
     SELECT SUBSTR(encode_item_code, 1, 2) AS syssdm,
@@ -609,7 +659,6 @@ function(req, res) {
 #* @param kl
 #* @param lqlx
 #* @get /count/major
-#* @serializer unboxedJSON
 function(req, res, lqnf, kl, lqlx) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -622,7 +671,7 @@ function(req, res, lqnf, kl, lqlx) {
     FROM ks_lqb
     WHERE lqnf = ?year"
     
-    sql_kl <- "AND kl = ?kl"
+    sql_kl <- klSplit(kl)
     sql_lqlx <- "AND lqlx = ?lqlx"
     
     sql_end <- "
@@ -630,10 +679,8 @@ function(req, res, lqnf, kl, lqlx) {
              zymc;"
     
     params <- list(year = year)
-    if (kl != '全部') {
-      sql_begin <- paste(sql_begin, sql_kl, sep = ' ')
-      params$kl <- kl
-    }
+    sql_begin <- paste0(sql_begin, sql_kl)
+    
     if (lqlx != '全部') {
       sql_begin <- paste(sql_begin, sql_lqlx, sep = ' ')
       params$lqlx <- lqlx
@@ -668,7 +715,6 @@ function(req, res, lqnf, kl, lqlx) {
 #* 新生录取 录取专业 概况 科类和类别结构
 #* @param lqnf
 #* @get /major/summary/structure
-#* @serializer unboxedJSON
 function(req, res, lqnf) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -683,6 +729,7 @@ function(req, res, lqnf) {
     ORDER BY n DESC;"
     sql <- sqlInterpolate(pool, sql, year = year)
     kl <- dbGetQuery(pool, sql)
+    kl <- klTransfer(kl)
     
     sql <- "
     SELECT (CASE WHEN LENGTH(lqlx) = 0 THEN '未知' ELSE lqlx END) AS lqlx,
@@ -707,7 +754,6 @@ function(req, res, lqnf) {
 #* 新生录取 录取专业 概况 top10
 #* @param lqnf
 #* @get /major/summary/top
-#* @serializer unboxedJSON
 function(req, res, lqnf) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -756,7 +802,6 @@ function(req, res, lqnf) {
 #* @param lqlx
 #* @param zymc
 #* @get /major/summary/trend
-#* @serializer unboxedJSON
 function(req, res, area, kl, lqlx, zymc) {
   tryCatch({
     sql_begin <- "
@@ -768,7 +813,7 @@ function(req, res, area, kl, lqlx, zymc) {
               COUNT(*) AS n
        FROM ks_lqb"
     
-    sql_kl <- 'where kl = ?kl'
+    sql_kl <- klSplit(kl)
     sql_lqlx <- 'and lqlx = ?lqlx'
     sql_zymc <- 'and zymc = ?zymc'
     
@@ -785,10 +830,8 @@ function(req, res, area, kl, lqlx, zymc) {
     ORDER BY lqnf;"
     
     params <- list(area = area)
-    if (kl != '全部') {
-      sql_begin <- paste(sql_begin, sql_kl, sep = ' ')
-      params$kl <- kl
-    }
+    sql_begin <- paste0(sql_begin, sql_kl)
+    
     if (lqlx != '全部') {
       sql_begin <- paste(sql_begin, sql_lqlx, sep = ' ')
       params$lqlx <- lqlx
@@ -819,7 +862,6 @@ function(req, res, area, kl, lqlx, zymc) {
 #* @param lqnf
 #* @param area
 #* @get /major/score
-#* @serializer unboxedJSON
 function(req, res, lqnf, area) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -872,7 +914,6 @@ function(req, res, lqnf, area) {
 #* @param kl
 #* @param lqlx
 #* @get /major/count
-#* @serializer unboxedJSON
 function(req, res, lqnf, kl, lqlx) {
   tryCatch({
     year <- as.integer(lqnf)
@@ -885,7 +926,7 @@ function(req, res, lqnf, kl, lqlx) {
     FROM ks_lqb
     WHERE lqnf = ?year"
     
-    sql_kl <- "AND kl = ?kl"
+    sql_kl <- klSplit(kl)
     sql_lqlx <- "AND lqlx = ?lqlx"
     
     sql_end <- "
@@ -893,10 +934,8 @@ function(req, res, lqnf, kl, lqlx) {
              zymc;"
     
     params <- list(year = year)
-    if (kl != '全部') {
-      sql_begin <- paste(sql_begin, sql_kl)
-      params$kl <- kl
-    }
+    sql_begin <- paste0(sql_begin, sql_kl)
+    
     if (lqlx != '全部') {
       sql_begin <- paste(sql_begin, sql_lqlx)
       params$lqlx <- lqlx
