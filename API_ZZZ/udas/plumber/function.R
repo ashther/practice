@@ -4,9 +4,11 @@ library(dplyr)
 library(tidyr)
 library(memoise)
 
-# HOME_PATH <- '/home/ashther/udas'
+
+# log config and function ------------------------------------------------
+
 LOG_PATH <- file.path(HOME_PATH, 'logger')
-LOG_LEVEL <- futile.logger::INFO
+LOG_LEVEL <- eval(parse(text = paste0('futile.logger::', config$log_level)))
 futile.logger::flog.threshold(LOG_LEVEL)
 futile.logger::flog.appender(futile.logger::appender.file(LOG_PATH), 
                              name = 'api_udas')
@@ -36,6 +38,8 @@ res_logger <- function(req, res, msg = NULL) {
   }
 }
 
+# gloabl data ------------------------------------------------------------
+
 area <- tidyr::unnest(tibble::enframe(list(
   '西北' = c('陕西省', '甘肃省', '青海省', '宁夏回族自治区', '新疆维吾尔自治区'), 
   '华东' = c('山东省', '江苏省', '安徽省', '浙江省', '江西省', '福建省', '上海市'), 
@@ -53,6 +57,12 @@ zgfs_reason <- tibble(
            '照片相貌不一致','档案有涂改','姓名有变更','有异常', '有违规加分')
 )
 
+fortune500 <- readRDS(file.path(HOME_PATH, 'fortune500.rds'))
+
+
+# global function --------------------------------------------------------
+
+# get continous time-series like tibble
 # the time-indicate column in df must be character type
 yearFill <- function(df, col = NULL) {
   
@@ -73,6 +83,7 @@ yearFill <- function(df, col = NULL) {
     mutate_all(.funs = replace_na, 0)
 }
 
+# convert first 'AND' to 'WHERE' in sql strings if there is no 'WHERE' at all
 # original sql mustn't include neither `where` nor `and` in plain text, 
 # except keywords
 sqlFill <- function(sql) {
@@ -83,6 +94,7 @@ sqlFill <- function(sql) {
   sql
 }
 
+# group kl to only 5 class
 klTransfer <- function(df) {
   temp <- mutate(df, kl = case_when(
     kl == '理工' ~ '理工', 
@@ -96,6 +108,7 @@ klTransfer <- function(df) {
   arrange(ungroup(temp), desc(n))
 }
 
+# get sql strings depends on kl value
 klSplit <- function(kl) {
   if (kl == '全部') {
     return('')
@@ -111,6 +124,20 @@ klSplit <- function(kl) {
           and kl not like '体育%' ")
 }
 
-if(!is.memoised(dbGetQuery)) {
+# a safer json transform function, it will convert NA, NULL, NaN, Inf to NA
+# this is for API response
+safeJSON <- function(lst) {
+  purrr::modify_if(lst, ~ !is.finite(.) || is.null(.), ~ NA)
+}
+
+zxStatGet <- function(df, year = 1) {
+  temp <- filter(df, lqnf > (max(lqnf) - year)) %>% 
+    add_count(zxmc) %>% 
+    filter(nn == year)
+  tibble(nZx = length(unique(temp$zxmc)), 
+         nAvg = mean(temp$n))
+}
+
+if (!is.memoised(dbGetQuery)) {
   dbGetQuery <- memoise(DBI::dbGetQuery, ~timeout(30))
 }

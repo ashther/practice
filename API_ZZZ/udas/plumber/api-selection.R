@@ -1,19 +1,33 @@
 
+# find where script is and get config ------------------------------------
+
+isInDocker <- function() {
+  group_info <- system('cat /proc/1/cgroup', intern = TRUE)
+  any(grepl('docker', group_info)) | file.exists('/.dockerenv')
+}
+
+if (isTRUE(isInDocker())) {
+  HOME_PATH <- '/home/rstudio'
+} else {
+  HOME_PATH <- '/home/ashther/udas'
+}
+config <- jsonlite::fromJSON(file.path(HOME_PATH, 'config.json'))
+
 # preparation ------------------------------------------------------------
+
 pool <- pool::dbPool(
   RMySQL::MySQL(),
-  host     = '192.168.15.128',
-  port     = 3306,
-  username = 'api_card',
-  password = '123456',
-  dbname   = 'udas'
+  host     = config$db_host,
+  port     = config$db_port,
+  username = config$db_username,
+  password = config$db_password,
+  dbname   = config$dbname
 )
 con <- pool::poolCheckout(pool)
 DBI::dbSendQuery(con, 'set names utf8')
 pool::poolReturn(con)
 # pool::poolClose(pool)
 
-HOME_PATH <- '/home/rstudio'
 saveRDS(pool, file.path(HOME_PATH, 'pool.rds'))
 source(file.path(HOME_PATH, 'function.R'), local = TRUE)
 
@@ -56,7 +70,7 @@ function(req) {
 
 # endpoint selection -----------------------------------------------------
 
-#* 从字典表获取省级地区
+
 #* @get /area
 function(req, res) {
   tryCatch({
@@ -80,7 +94,7 @@ function(req, res) {
   })
 }
 
-#* 从字典表获取注册状况
+
 #* @get /zczk
 function(req, res) {
   tryCatch({
@@ -112,7 +126,7 @@ function(req, res) {
   })
 }
 
-#* 从录取表获取去重录取年份
+
 #* @get /lqnf
 function(req, res) {
   tryCatch({
@@ -131,7 +145,7 @@ function(req, res) {
   })
 }
 
-#* 从注册表获取去重注册年份
+
 #* @get /xnZc
 function(req, res) {
   tryCatch({
@@ -150,7 +164,7 @@ function(req, res) {
   })
 }
 
-#* 从资格复审表获取去重复审年份
+
 #* @get /xnFs
 function(req, res) {
   tryCatch({
@@ -169,7 +183,7 @@ function(req, res) {
   })
 }
 
-#* 从学籍异动表获取去重异动年份
+
 #* @get /ydrq
 function(req, res) {
   tryCatch({
@@ -188,7 +202,26 @@ function(req, res) {
   })
 }
 
-#* 从录取表获取所有科类
+
+#* @get /byrq
+function(req, res) {
+  tryCatch({
+    year_range <- dbGetQuery(pool, 'SELECT DISTINCT SUBSTR(byrq, 1, 4) as byrq FROM bks_jyqxb;')
+    year_range <- as.integer(year_range$byrq)
+    # full_year <- seq(min(year_range), max(year_range), 1)
+    
+    res_logger(req, res)
+    # list(ydrq = full_year)
+    list(byrq = year_range)
+    
+  }, error = function(e) {
+    res$status <- 400L
+    res_logger(req, res, e$message)
+    e$message
+  })
+}
+
+
 #* @get /kl
 function(req, res) {
   tryCatch({
@@ -207,7 +240,7 @@ function(req, res) {
   })
 }
 
-#* 从录取表获取所有录取类型
+
 #* @get /lqlx
 function(req, res) {
   tryCatch({
@@ -226,7 +259,7 @@ function(req, res) {
   })
 }
 
-#* 从录取表获取所有专业名称
+
 #* @get /zymc
 function(req, res) {
   tryCatch({
@@ -245,7 +278,7 @@ function(req, res) {
   })
 }
 
-#* 从教职工表获取所有单位名称
+
 #* @get /dwmc
 function(req, res) {
   tryCatch({
@@ -264,7 +297,7 @@ function(req, res) {
   })
 }
 
-#* 从资格复审表获取所有复审未通过原因
+
 #* @get /zgfs
 function(req, res) {
   tryCatch({
@@ -272,6 +305,25 @@ function(req, res) {
     
     res_logger(req, res)
     list(zgfs = result)
+    
+  }, error = function(e) {
+    res$status <- 400L
+    res_logger(req, res, e$message)
+    e$message
+  })
+}
+
+
+#* @get /yxsmc
+function(req, res) {
+  tryCatch({
+    result <- dbGetQuery(
+      pool, 'SELECT yxsmc, COUNT(*) AS n FROM bks_xjb GROUP BY yxsmc ORDER BY n DESC;'
+    )$yxsmc
+    result <- c('全部', result)
+    
+    res_logger(req, res)
+    list(yxsmc = result)
     
   }, error = function(e) {
     res$status <- 400L
