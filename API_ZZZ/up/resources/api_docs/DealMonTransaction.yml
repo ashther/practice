@@ -1,0 +1,80 @@
+some description
+some description
+---
+tags:
+  - some tags
+parameters:
+  - name: id
+    description: 
+    in: query
+    type: integer
+    required: true
+    default: 7985
+  - name: startDate
+    description: 统计时段起始日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-01'
+  - name: endDate
+    description: 统计时段终止日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-07'
+  - name: pageIndex
+    description: 分页索引
+    in: query
+    type: integer
+    required: true
+    default: 1
+  - name: pageSize
+    description: 分页记录数
+    in: query
+    type: integer
+    required: true
+    default: 5
+responses:
+  200:
+    description: 正常返回
+    schema:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: 
+        data: 
+          type: object
+          description: 
+          properties:
+            business:
+              type: array
+              description: 
+              items:
+                type: string
+            mon:
+              type: array
+              description: 
+              items:
+                type: number
+            date:
+              type: array
+              description: 
+              items:
+                type: string
+    examples:
+      total: 3
+      data: 
+        business: ['', '', '']
+        mon: [10, 10.5, 10]
+        date: ['2017-09-01', '2017-09-02', '2017-09-02']
+  500:
+    description: 内部计算错误，也可能是入参的问题
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 错误信息
+    examples:
+      message: 'not correct level parameter'

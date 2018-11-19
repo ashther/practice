@@ -1,0 +1,178 @@
+some description
+some description
+---
+tags:
+  - some tags
+parameters:
+  - name: level
+    description: 
+    in: query
+    type: string
+    required: true
+    enum: ['all', 'college', 'major']
+    default: all
+  - name: id
+    description: 
+    in: query
+    type: integer
+responses:
+  200:
+    description: 正常返回
+    schema:
+      type: object
+      properties:
+        sex:
+          type: object
+          description: 
+          properties:
+            year: 
+              type: array
+              items: 
+                type: string
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  label: 
+                    type: string
+                    description: 
+                  value:
+                    type: array
+                    items:
+                      type: integer
+                      description: 
+        area:
+          type: object
+          description: 
+          properties:
+            year: 
+              type: array
+              items: 
+                type: string
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  label: 
+                    type: string
+                    description: 
+                  value:
+                    type: array
+                    items:
+                      type: integer
+                      description: 
+        politics:
+          type: object
+          description: 
+          properties:
+            year: 
+              type: array
+              items: 
+                type: string
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  label: 
+                    type: string
+                    description: 
+                  value:
+                    type: array
+                    items:
+                      type: integer
+                      description: 
+        nation:
+          type: object
+          description: 
+          properties:
+            year: 
+              type: array
+              items: 
+                type: string
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  label: 
+                    type: string
+                    description: 
+                  value:
+                    type: array
+                    items:
+                      type: integer
+                      description: 
+        area_simple:
+          type: object
+          description: 
+          properties:
+            year: 
+              type: array
+              items: 
+                type: string
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  label: 
+                    type: string
+                    description: 
+                  value:
+                    type: array
+                    items:
+                      type: integer
+                      description: 
+        nation_simple:
+          type: object
+          description: 
+          properties:
+            year: 
+              type: array
+              items: 
+                type: string
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  label: 
+                    type: string
+                    description: 
+                  value:
+                    type: array
+                    items:
+                      type: integer
+                      description: 
+    examples:
+      sex:
+        year: ['2017', '2018']
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
+      area:
+        year: ['2017', '2018']
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
+      politics:
+        year: ['2017', '2018']
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
+      nation:
+        year: ['2017', '2018']
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
+      area_simple:
+        year: ['2017', '2018']
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
+      nation_simple:
+        year: ['2017', '2018']
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
+  500:
+    description: 内部计算错误，也可能是入参的问题
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 错误信息
+    examples:
+      message: 'not correct level parameter'

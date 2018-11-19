@@ -1,0 +1,79 @@
+some description
+some description
+---
+tags: 
+  - some tags
+parameters:
+  - name: level
+    description: 
+    in: query
+    type: string
+    required: true
+    enum: ['all', 'college', 'major']
+    default: all
+  - name: id
+    description: 
+    in: query
+    type: integer
+  - name: startDate
+    description: 统计时段起始日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-01'
+  - name: endDate
+    description: 统计时段终止日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-07'
+  - name: business
+    description: 
+    in: query
+    type: string
+    required: false
+  - name: sex
+    description: 
+    in: query
+    type: string
+    required: false
+    enum: ['男', '女']
+  - name: area
+    description: 
+    in: query
+    type: string
+    required: false
+  - name: yearIn
+    description: 
+    in: query
+    type: string
+    required: false
+responses:
+  200:
+    description: 正常返回
+    schema:
+      type: object
+      properties:
+        date:
+          type: array
+          description: 
+          items:
+            type: string
+        n:
+          type: array
+          description: 
+          items:
+            type: integer
+    examples:
+      date: ['2017-09-01', '2017-09-02']
+      n: [10, 20]
+  500:
+    description: 内部计算错误，也可能是入参的问题
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 错误信息
+    examples:
+      message: 'not correct level parameter'

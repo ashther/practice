@@ -1,4 +1,4 @@
-from flask import g, current_app
+from flask import g, current_app as app
 import sqlite3
 import pandas as pd
 
@@ -14,7 +14,7 @@ def get_db():
     """
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(current_app.config['DATABASE'])
+        db = g._database = sqlite3.connect(app.config['DATABASE'])
         db.row_factory = make_dict
     return db
 
@@ -31,5 +31,5 @@ def query_db(query, args=(), one=False):
 
 
 def query_db_pd(query, args=()):
-    df = pd.read_sql_query(query, sqlite3.connect(current_app.config['DATABASE']), params=args)
+    df = pd.read_sql_query(query, sqlite3.connect(app.config['DATABASE']), params=args)
     return df

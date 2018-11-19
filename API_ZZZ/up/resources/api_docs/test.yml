@@ -1,0 +1,16 @@
+test
+test
+---
+tags:
+  - test
+responses:
+  200:
+    description: ok
+    schema:
+      type: object
+      properties:
+        msg:
+          type: string
+          description: return message
+    examples:
+      msg: 'this is test message'

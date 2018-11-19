@@ -1,0 +1,114 @@
+some description
+some description
+---
+tags:
+  - some tags
+parameters:
+  - name: level
+    description: 
+    in: query
+    type: string
+    required: true
+    enum: ['all', 'college', 'major']
+    default: all
+  - name: id
+    description: 
+    in: query
+    type: integer
+  - name: startDate
+    description: 统计时段起始日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-01'
+  - name: endDate
+    description: 统计时段终止日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-01'
+responses:
+  200:
+    description: 正常返回
+    schema:
+      type: object
+      properties:
+        sex:
+          type: object
+          description: 
+          properties:
+            sex:
+              type: array
+              description: 
+              items:
+                type: string
+            n:
+              type: array
+              description: 
+              items:
+                type: integer
+        politics:
+          type: object
+          description: 
+          properties:
+            politics:
+              type: array
+              description: 
+              items:
+                type: string
+            n:
+              type: array
+              description: 
+              items:
+                type: integer
+        area:
+          type: object
+          description: 
+          properties:
+            area:
+              type: array
+              description: 
+              items:
+                type: string
+            n:
+              type: array
+              description: 
+              items:
+                type: integer
+        nation:
+          type: object
+          description: 
+          properties:
+            nation:
+              type: array
+              description: 
+              items:
+                type: string
+            n:
+              type: array
+              description: 
+              items:
+                type: integer
+    examples:
+      sex: 
+        sex: ['', '']
+        n: [50, 50]
+      politics:
+        politics: ['', '']
+        n: [50, 50]
+      area:
+        area: ['', '']
+        n: [50, 50]
+      nation:
+        nation: ['', '']
+        n: [50, 50]
+  500:
+    description: 内部计算错误，也可能是入参的问题
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 错误信息
+    examples:
+      message: 'not correct level parameter'

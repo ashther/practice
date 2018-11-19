@@ -1,9 +1,12 @@
+import re
+
 from flask_restful import Resource, reqparse, abort
-from models.db import query_db, query_db_pd
+from flasgger import swag_from
 import pandas as pd
 import numpy as np
-import re
 from pypika import Query, Table
+
+from models.db import query_db_pd
 
 
 class Regular(Resource):
@@ -17,7 +20,11 @@ class Regular(Resource):
     parser.add_argument('area', type=str, location='args')
     parser.add_argument('yearIn', type=int, location='args')
 
+    @swag_from('api_docs/regularGroup.yml')
     def get(self):
+        """
+        user group probability distributions in different regular index interval
+        """
         try:
             # get parameters
             args = self.parser.parse_args()
@@ -57,7 +64,9 @@ class Regular(Resource):
             elif level == 'major':
                 q_sub = q_sub.where(account.major_id == ':id')
             else:
-                abort(400, message='not correct level parameter')
+                raise ValueError('not correct level parameter')
+
+            # q, q_sub = query_users_on_level('regular', 'regular', level)
 
             # check parameters
             if (degree is not None) and (degree != '全部'):
@@ -86,10 +95,7 @@ class Regular(Resource):
             df['group'] = df['group'].astype(str)
 
             return {
-                'data': {
-                    'group': df['group'].tolist(),
-                    'regular': df['regular'].tolist()
-                },
+                'data': df.to_dict(orient='list'),
                 'regularMean': regular_mean if not np.isnan(regular_mean) else None
             }
 
@@ -104,7 +110,11 @@ class RegularPerson(Resource):
     parser.add_argument('startDate', type=str, location='args', required=True)
     parser.add_argument('endDate', type=str, location='args', required=True)
 
+    @swag_from('api_docs/regularPerson.yml')
     def get(self, item):
+        """
+        personal daily regular or normal index
+        """
         try:
             args = self.parser.parse_args()
             sql = 'select {item}, date from {item} where date >= :startDate and date <= :endDate and accnum = :id'
@@ -119,10 +129,7 @@ class RegularPerson(Resource):
             mean = df[item].mean()
 
             return {
-                'data': {
-                    'date': df['date'].tolist(),
-                    'item': df[item].tolist()
-                },
+                'data': df.to_dict(orient='list'),
                 'mean': mean if not np.isnan(mean) else None
             }
 
