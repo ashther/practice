@@ -1,0 +1,54 @@
+群体用户首页-活跃用户
+该API用于群体用户首页活跃用户模块，将返回统计时段内指定用户群体的活跃用户数及活跃用户率
+---
+tags:
+  - 活跃用户
+parameters:
+  - name: level
+    description: 群体用户等级
+    in: query
+    type: string
+    required: true
+    enum: ['all', 'college', 'major']
+    default: all
+  - name: id
+    description: 当群体用户不是“全校”时，对应的群体用户id，如院系id
+    in: query
+    type: integer
+  - name: startDate
+    description: 统计时段起始日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-01'
+  - name: endDate
+    description: 统计时段终止日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-07'
+responses:
+  200:
+    description: 正常返回
+    schema:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: 活跃用户数
+        ratio:
+          type: number
+          description: 活跃用户率
+    examples:
+      total: 100
+      ratio: 0.50
+  500:
+    description: 内部计算错误，也可能是入参的问题
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 错误信息
+    examples:
+      message: 'not correct level parameter'

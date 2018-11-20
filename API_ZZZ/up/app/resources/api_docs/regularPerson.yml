@@ -1,0 +1,69 @@
+个人用户作息规律指数
+该API用于计算群体用户在统计时段内不同作息规律指数区间内的用户占比，及平均指数
+---
+tags:
+  - 作息规律
+parameters:
+  - name: item
+    description: 作息规律/正常指数
+    in: path
+    type: string
+    enum: [regular, normal]
+    required: true
+    default: regular
+  - name: id
+    description: 个人用户id，accnum
+    in: query
+    type: integer
+    required: true
+    default: 10
+  - name: startDate
+    description: 统计时段起始日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-01'
+  - name: endDate
+    description: 统计时段终止日
+    in: query
+    type: string
+    required: true
+    default: '2017-10-01'
+responses:
+  200:
+    description: 正常返回
+    schema:
+      type: object
+      properties:
+        data:
+          type: object
+          description: 作息规律/正常指数时间序列
+          properties:
+            date:
+              type: array
+              description: 日期
+              items:
+                type: string
+            regular:
+              type: array
+              description: 该日期作息规律/正常指数
+              items:
+                type: number
+        mean:
+          type: number
+          description: 作息规律/正常指数平均值
+    examples:
+      data:
+        date: ['2017-09-01', '2017-09-02']
+        regular: [0.5, 0.5]
+      mean: 0.5
+  500:
+    description: 内部计算错误，也可能是入参的问题
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 错误信息
+    examples:
+      message: 'not correct level parameter'

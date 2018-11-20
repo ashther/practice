@@ -1,0 +1,63 @@
+群体/个人用户消费行为首页及详情页-每日消费金额或人均值
+该API用于群体和个人用户在首页及详情页面返回统计时段内每日消费金额，对于群体用户可计算人均金额
+---
+tags:
+  - 消费行为
+parameters:
+  - name: level
+    description: 群体用户等级或个人用户
+    in: query
+    type: string
+    required: true
+    enum: ['all', 'college', 'major', 'ego']
+    default: all
+  - name: id
+    description: 当群体用户不是“全校”时，对应的群体用户id，如院系id，或个人id
+    in: query
+    type: integer
+  - name: startDate
+    description: 统计时段起始日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-01'
+  - name: endDate
+    description: 统计时段终止日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-07'
+  - name: isAvg
+    description: 当选择群体用户时，是否需要返回每日人均金额
+    in: query
+    type: boolean
+    required: false
+responses:
+  200:
+    description: 正常返回
+    schema:
+      type: object
+      properties:
+        date:
+          type: array
+          description: 日期
+          items:
+            type: string
+        n:
+          type: array
+          description: 每日消费金额或人均值
+          items:
+            type: number
+    examples:
+      date: ['2017-09-01', '2017-09-02']
+      data: [10, 10.5]
+  500:
+    description: 内部计算错误，也可能是入参的问题
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 错误信息
+    examples:
+      message: 'not correct level parameter'

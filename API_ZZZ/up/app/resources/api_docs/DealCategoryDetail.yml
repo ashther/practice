@@ -1,0 +1,83 @@
+群体用户消费类型详情页-不同性别/生源地/入学年群体每日各消费类型次数
+该API用于群体用户在详情页面返回统计时段内不同性别/生源地/入学年群体各消费类型每日消费次数
+---
+tags:
+  - 消费类型
+parameters:
+  - name: level
+    description: 群体用户等级
+    in: query
+    type: string
+    required: true
+    enum: ['all', 'college', 'major']
+    default: all
+  - name: id
+    description: 当群体用户不是“全校”时，对应的群体用户id，如院系id
+    in: query
+    type: integer
+  - name: startDate
+    description: 统计时段起始日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-01'
+  - name: endDate
+    description: 统计时段终止日
+    in: query
+    type: string
+    required: true
+    default: '2017-09-07'
+  - name: sex
+    description: 性别
+    in: query
+    type: string
+    required: false
+    enum: ['男', '女']
+  - name: area
+    description: 生源地
+    in: query
+    type: string
+    required: false
+  - name: yearIn
+    description: 入学年
+    in: query
+    type: string
+    required: false
+responses:
+  200:
+    description: 正常返回
+    schema:
+      type: object
+      properties:
+        date:
+          type: array
+          description: 日期
+          items:
+            type: string
+        data:
+          type: array
+          description: 各消费类型每日消费次数
+          items:
+            type: object
+            properties:
+              label: 
+                type: string
+                description: 消费类型
+              value:
+                type: array
+                description: 每日消费次数
+                items:
+                  type: integer
+    examples:
+      date: ['2017-09-01', '2017-09-02']
+      data: [{label: '饮食', value: [1, 2]}, {label: '洗浴', value: [1, 2]}]
+  500:
+    description: 内部计算错误，也可能是入参的问题
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 错误信息
+    examples:
+      message: 'not correct level parameter'
