@@ -54,7 +54,7 @@ class DealCountDetail(unittest.TestCase):
 
     def test_response_business(self):
         args = copy.deepcopy(self.args)
-        args.update({'business': '丹桂苑一楼'})
+        args.update({'business': ''})
         response = requests.get(URL + self.endpoint, params=args, auth=self.auth)
         self.assertEqual(response.status_code, 200, 'should be 200')
         self.assertListEqual(['date', 'n'], list(response.json().keys()))
@@ -63,7 +63,7 @@ class DealCountDetail(unittest.TestCase):
 
     def test_response_sex(self):
         args = copy.deepcopy(self.args)
-        args.update({'sex': '男'})
+        args.update({'sex': ''})
         response = requests.get(URL + self.endpoint, params=args, auth=self.auth)
         self.assertEqual(response.status_code, 200, 'should be 200')
         self.assertListEqual(['date', 'n'], list(response.json().keys()))
@@ -72,7 +72,7 @@ class DealCountDetail(unittest.TestCase):
 
     def test_response_area(self):
         args = copy.deepcopy(self.args)
-        args.update({'area': '甘肃省'})
+        args.update({'area': ''})
         response = requests.get(URL + self.endpoint, params=args, auth=self.auth)
         self.assertEqual(response.status_code, 200, 'should be 200')
         self.assertListEqual(['date', 'n'], list(response.json().keys()))
@@ -81,7 +81,7 @@ class DealCountDetail(unittest.TestCase):
 
     def test_response_yearIn(self):
         args = copy.deepcopy(self.args)
-        args.update({'yearIn': '2017'})
+        args.update({'yearIn': ''})
         response = requests.get(URL + self.endpoint, params=args, auth=self.auth)
         self.assertEqual(response.status_code, 200, 'should be 200')
         self.assertListEqual(['date', 'n'], list(response.json().keys()))

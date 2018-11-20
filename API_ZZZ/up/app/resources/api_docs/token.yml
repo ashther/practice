@@ -1,8 +1,8 @@
-登录页-获取token
-该API用于登录时获取token
+some description
+some description
 ---
-tags:
-  - 登陆
+tags: 
+  - some tags
 responses:
   200:
     description: 正常返回
@@ -14,7 +14,7 @@ responses:
           description: token
         duration:
           type: integer
-          description: 有效时间，单位秒
+          description: 
     examples:
       token: 'this is a fake token example'
       duration: 3600

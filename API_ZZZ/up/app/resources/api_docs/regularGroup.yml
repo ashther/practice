@@ -1,18 +1,18 @@
-群体用户作息规律指数
-该API用于计算群体用户在统计时段内不同作息规律指数区间内的用户占比，及平均指数
+some description
+some description
 ---
-tags:
-  - 作息规律
+tags: 
+  - some tags
 parameters:
   - name: level
-    description: 群体用户等级
+    description: 
     in: query
     type: string
     required: true
     enum: ['all', 'college', 'major']
     default: all
   - name: id
-    description: 当群体用户不是“全校”时，对应的群体用户id，如院系id
+    description: 
     in: query
     type: integer
   - name: startDate
@@ -28,23 +28,23 @@ parameters:
     required: true
     default: '2017-09-07'
   - name: degree
-    description: 在读学位
+    description: 
     in: query
     type: string
     required: false
   - name: sex
-    description: 性别
+    description: 
     in: query
     type: string
     required: false
     enum: ['男', '女']
   - name: area
-    description: 生源地
+    description: 
     in: query
     type: string
     required: false
   - name: yearIn
-    description: 入学年
+    description: 
     in: query
     type: string
     required: false
@@ -56,21 +56,21 @@ responses:
       properties:
         data:
           type: object
-          description: 作息规律指数封箱统计
+          description: 
           properties:
             group:
               type: array
-              description: 封箱区间
+              description: 
               items:
                 type: string
             regular:
               type: array
-              description: 该区间内用户占比
+              description: 
               items:
                 type: number
         regularMean:
           type: number
-          description: 作息规律指数平均值
+          description: 
     examples:
       data:
         group: ["(-0.001, 0.05]", "(0.05, 0.1]"]

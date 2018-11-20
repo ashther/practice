@@ -26,8 +26,8 @@ class ProductionConfig(Config):
 
 swagger_template = {
     'info': {
-        'title': '用户画像系统',
-        'description': '基于一卡通数据的用户画像侧写',
+        'title': '',
+        'description': '',
         'version': '0.1.0'
     },
     'securityDefinitions': {

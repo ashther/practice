@@ -1,18 +1,18 @@
-群体/个人用户消费类型详情页-每日各消费类型次数
-该API用于群体和个人用户在详情页面返回统计时段内各消费类型每日消费次数，对于群体用户可计算人均次数
+some description
+some description
 ---
-tags:
-  - 消费类型
+tags: 
+  - some tags
 parameters:
   - name: level
-    description: 群体用户等级或个人用户
+    description: 
     in: query
     type: string
     required: true
     enum: ['all', 'college', 'major', 'ego']
     default: all
   - name: id
-    description: 当群体用户不是“全校”时，对应的群体用户id，如院系id，或个人id
+    description: 
     in: query
     type: integer
   - name: startDate
@@ -28,7 +28,7 @@ parameters:
     required: true
     default: '2017-09-07'
   - name: isAvg
-    description: 当选择群体用户时，是否需要返回每日人均次数
+    description: 
     in: query
     type: boolean
     required: false
@@ -40,26 +40,26 @@ responses:
       properties:
         date:
           type: array
-          description: 日期
+          description: 
           items:
             type: string
         data:
           type: array
-          description: 各消费类型每日消费次数或人均值
+          description: 
           items:
             type: object
             properties:
               label: 
                 type: string
-                description: 消费类型
+                description: 
               value:
                 type: array
-                description: 每日消费次数或每日人均消费次数
+                description: 
                 items:
                   type: number
     examples:
       date: ['2017-09-01', '2017-09-02']
-      data: [{label: '饮食', value: [1, 1.5]}, {label: '洗浴', value: [1, 1.5]}]
+      data: [{label: '', value: [1, 1.5]}, {label: '', value: [1, 1.5]}]
   500:
     description: 内部计算错误，也可能是入参的问题
     schema:

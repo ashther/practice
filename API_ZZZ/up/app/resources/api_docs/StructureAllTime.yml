@@ -1,18 +1,18 @@
-群体用户群体结构详情页
-该API用于群体用户群体结构详情页，用于返回所有用户在各维度的结构占比的时间序列
+some description
+some description
 ---
-tags:
-  - 群体结构
+tags: 
+  - some tags
 parameters:
   - name: level
-    description: 群体用户等级
+    description: 
     in: query
     type: string
     required: true
     enum: ['all', 'college', 'major']
     default: all
   - name: id
-    description: 当群体用户不是“全校”时，对应的群体用户id，如院系id
+    description: 
     in: query
     type: integer
 responses:
@@ -23,7 +23,7 @@ responses:
       properties:
         sex:
           type: object
-          description: 性别面板
+          description: 
           properties:
             year: 
               type: array
@@ -36,15 +36,15 @@ responses:
                 properties:
                   label: 
                     type: string
-                    description: 性别标签
+                    description: 
                   value:
                     type: array
                     items:
                       type: integer
-                      description: 各性别在不同年份的人数
+                      description: 
         area:
           type: object
-          description: 生源地面板
+          description: 
           properties:
             year: 
               type: array
@@ -57,15 +57,15 @@ responses:
                 properties:
                   label: 
                     type: string
-                    description: 生源地标签
+                    description: 
                   value:
                     type: array
                     items:
                       type: integer
-                      description: 各生源地在不同年份的人数
+                      description: 
         politics:
           type: object
-          description: 政治面貌面板
+          description: 
           properties:
             year: 
               type: array
@@ -78,15 +78,15 @@ responses:
                 properties:
                   label: 
                     type: string
-                    description: 政治面貌标签
+                    description: 
                   value:
                     type: array
                     items:
                       type: integer
-                      description: 各政治面貌在不同年份的人数
+                      description: 
         nation:
           type: object
-          description: 民族面板
+          description: 
           properties:
             year: 
               type: array
@@ -99,15 +99,15 @@ responses:
                 properties:
                   label: 
                     type: string
-                    description: 民族标签
+                    description: 
                   value:
                     type: array
                     items:
                       type: integer
-                      description: 各民族在不同年份的人数
+                      description: 
         area_simple:
           type: object
-          description: 省内外生源地面板
+          description: 
           properties:
             year: 
               type: array
@@ -120,15 +120,15 @@ responses:
                 properties:
                   label: 
                     type: string
-                    description: 省内外标签
+                    description: 
                   value:
                     type: array
                     items:
                       type: integer
-                      description: 省内外生源在不同年份的人数
+                      description: 
         nation_simple:
           type: object
-          description: 汉族少数民族面板
+          description: 
           properties:
             year: 
               type: array
@@ -141,31 +141,31 @@ responses:
                 properties:
                   label: 
                     type: string
-                    description: 汉族少数民族标签
+                    description: 
                   value:
                     type: array
                     items:
                       type: integer
-                      description: 汉族和少数民族在不同年份的人数
+                      description: 
     examples:
       sex:
         year: ['2017', '2018']
-        data: [{label: '男', value: [1, 2]}, {label: '女', value: [1, 2]}]
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
       area:
         year: ['2017', '2018']
-        data: [{label: '甘肃省', value: [1, 2]}, {label: '陕西省', value: [1, 2]}]
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
       politics:
         year: ['2017', '2018']
-        data: [{label: '团员', value: [1, 2]}, {label: '党员', value: [1, 2]}]
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
       nation:
         year: ['2017', '2018']
-        data: [{label: '汉族', value: [1, 2]}, {label: '回族', value: [1, 2]}]
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
       area_simple:
         year: ['2017', '2018']
-        data: [{label: '省内', value: [1, 2]}, {label: '省外', value: [1, 2]}]
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
       nation_simple:
         year: ['2017', '2018']
-        data: [{label: '汉族', value: [1, 2]}, {label: '少数民族', value: [1, 2]}]
+        data: [{label: '', value: [1, 2]}, {label: '', value: [1, 2]}]
   500:
     description: 内部计算错误，也可能是入参的问题
     schema:

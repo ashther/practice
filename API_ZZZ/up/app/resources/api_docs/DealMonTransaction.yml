@@ -1,11 +1,11 @@
-个人用户消费行为详情页-每日消费金额详情
-该API用于个人用户在详情页面返回统计时段内每日在不同商户的消费金额
+some description
+some description
 ---
-tags:
-  - 消费行为
+tags: 
+  - some tags
 parameters:
   - name: id
-    description: 个人用户id
+    description: 
     in: query
     type: integer
     required: true
@@ -42,30 +42,30 @@ responses:
       properties:
         total:
           type: integer
-          description: 总记录数
+          description: 
         data: 
           type: object
-          description: 分页记录
+          description: 
           properties:
             business:
               type: array
-              description: 商户
+              description: 
               items:
                 type: string
             mon:
               type: array
-              description: 每日各商户消费金额
+              description: 
               items:
                 type: number
             date:
               type: array
-              description: 日期
+              description: 
               items:
                 type: string
     examples:
       total: 3
       data: 
-        business: ['丹桂苑一楼', '丹桂苑三楼', '医学学而超市']
+        business: ['', '', '']
         mon: [10, 10.5, 10]
         date: ['2017-09-01', '2017-09-02', '2017-09-02']
   500:

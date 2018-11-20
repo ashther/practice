@@ -74,7 +74,7 @@ class Search(unittest.TestCase):
         self.assertEqual(response.status_code, 403, 'should be 403')
 
     def test_response_name(self):
-        response = requests.get(URL + self.endpoint, params={'q': '马文'}, auth=self.auth)
+        response = requests.get(URL + self.endpoint, params={'q': ''}, auth=self.auth)
         self.assertEqual(response.status_code, 200, 'should be 200')
         self.assertListEqual(['id', 'percode', 'name', 'sex', 'major', 'college'],
                              list(response.json().keys()))
@@ -82,7 +82,7 @@ class Search(unittest.TestCase):
         self.assertIsInstance(response.json().get('percode')[0], str)
 
     def test_response_percode(self):
-        response = requests.get(URL + self.endpoint, params={'q': '320160935121'}, auth=self.auth)
+        response = requests.get(URL + self.endpoint, params={'q': ''}, auth=self.auth)
         self.assertEqual(response.status_code, 200, 'should be 200')
         self.assertListEqual(['id', 'percode', 'name', 'sex', 'major', 'college'],
                              list(response.json().keys()))

@@ -1,16 +1,16 @@
-下拉列表选项
-用来返回各下拉列表选项，政治面貌与民族例外，这两个选项应从群体结构API的返回数据中提取
+some description
+some description
 ---
-tags:
-  - 选项
+tags: 
+  - some tags
 parameters:
   - name: item
-    description: 选项类型
+    description: 
     in: path
     type: string
     required: true
-    enum: ['college', 'major', 'business', 'sex', 'area', 'yearIn', 'businessType']
-    default: college
+    enum: []
+    default: 
 responses:
   200:
     description: 正常返回
@@ -19,17 +19,17 @@ responses:
       properties:
         id:
           type: array
-          description: 对于college和major分别是其编号，其他选项类型的可以无视
+          description: 
           items:
             type: string
         label:
           type: array
-          description: 选项标签
+          description: 
           items:
             type: string
     examples:
-      id: ['33', '34']
-      label: ['管理学院', '外国语学院']
+      id: ['', '']
+      label: ['', '']
   500:
     description: 内部计算错误，也可能是入参的问题
     schema:

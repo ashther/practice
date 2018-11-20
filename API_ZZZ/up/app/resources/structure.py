@@ -65,9 +65,9 @@ class StructureActive(Resource):
             sql = re.sub('\'(:\w+)\'', '\\1', str(q))
             df = query_db_pd(sql, args)
 
-            df.loc[df.area.notnull() & (df.area != '甘肃省'), 'area'] = '省外'
-            df.loc[df.area == '甘肃省', 'area'] = '省内'
-            df.loc[df.nation.notnull() & (df.nation != '汉族'), 'nation'] = '少数民族'
+            df.loc[df.area.notnull() & (df.area != ''), 'area'] = ''
+            df.loc[df.area == '', 'area'] = ''
+            df.loc[df.nation.notnull() & (df.nation != ''), 'nation'] = ''
 
             items = ['sex', 'politics', 'area', 'nation']
             result = {}
@@ -138,10 +138,10 @@ class StructureAllTime(Resource):
             df = query_db_pd(sql, args)
 
             df['area_simple'] = df['area']
-            df.loc[df.area_simple.notnull() & (df.area_simple != '甘肃省'), 'area_simple'] = '省外'
-            df.loc[df.area_simple == '甘肃省', 'area_simple'] = '省内'
+            df.loc[df.area_simple.notnull() & (df.area_simple != ''), 'area_simple'] = ''
+            df.loc[df.area_simple == '', 'area_simple'] = ''
             df['nation_simple'] = df['nation']
-            df.loc[df.nation_simple.notnull() & (df.nation_simple != '汉族'), 'nation_simple'] = '少数民族'
+            df.loc[df.nation_simple.notnull() & (df.nation_simple != ''), 'nation_simple'] = ''
 
             result = {}
             for item in df.columns:

@@ -1,18 +1,18 @@
-群体用户活跃用户详情页-疑似失联用户表
-该API用于群体用户活跃用户详情页，将返回当前日期疑似失联用户表
+some description
+some description
 ---
-tags:
-  - 活跃用户
+tags: 
+  - some tags
 parameters:
   - name: level
-    description: 群体用户等级
+    description: 
     in: query
     type: string
     required: true
     enum: ['all', 'college', 'major']
     default: all
   - name: id
-    description: 当群体用户不是“全校”时，对应的群体用户id，如院系id
+    description: 
     in: query
     type: integer
   - name: pageIndex
@@ -35,60 +35,60 @@ responses:
       properties:
         total: 
           type: integer
-          description: 总行数
+          description: 
         data: 
           type: object
-          description: 疑似失联数据
+          description: 
           properties:
             percode:
               type: array
-              description: 学号
+              description: 
               items:
                 type: string
             name:
               type: array
-              description: 姓名
+              description: 
               items:
                 type: string
             last:
               type: array
-              description: 最后刷卡时间
+              description: 
               items:
                 type: string
             idtype:
               type: array
-              description: 证件类型
+              description: 
               items:
                 type: string
             idno:
               type: array
-              description: 证件号码
+              description: 
               items:
                 type: string
             sex:
               type: array
-              description: 性别
+              description: 
               items: 
                 type: string
             college:
               type: array
-              description: 院系
+              description: 
               items:
                 type: string
             major:
               type: array
-              description: 专业
+              description: 
               items:
                 type: string
     examples:
-      percode: '120130901411'
-      name: '张三'
+      percode: ''
+      name: ''
       last: '2018-04-20 19:44:27'
-      idtype: '身份证'
-      idno: '620102199001010000'
+      idtype: ''
+      idno: ''
       sex: '男'
-      college: '管理学院'
-      major: '博士-行政管理'
+      college: ''
+      major: ''
   500:
     description: 内部计算错误，也可能是入参的问题
     schema:

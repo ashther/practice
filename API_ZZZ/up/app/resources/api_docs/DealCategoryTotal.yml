@@ -1,18 +1,18 @@
-群体/个人用户消费类型首页-各消费类型总次数
-该API用于群体和个人用户首页面返回统计时段内各消费类型总消费次数
+some description
+some description
 ---
-tags:
-  - 消费类型
+tags: 
+  - some tags
 parameters:
   - name: level
-    description: 群体用户等级或个人用户
+    description: 
     in: query
     type: string
     required: true
     enum: ['all', 'college', 'major', 'ego']
     default: all
   - name: id
-    description: 当群体用户不是“全校”时，对应的群体用户id，如院系id，或个人id
+    description: 
     in: query
     type: integer
   - name: startDate
@@ -35,16 +35,16 @@ responses:
       properties:
         type:
           type: array
-          description: 消费类型
+          description: 
           items:
             type: string
         n:
           type: array
-          description: 消费次数
+          description: 
           items:
             type: integer
     examples:
-      type: ['其他', '饮食']
+      type: ['', '']
       n: [1, 2]
   500:
     description: 内部计算错误，也可能是入参的问题

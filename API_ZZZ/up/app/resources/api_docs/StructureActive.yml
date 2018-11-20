@@ -1,18 +1,18 @@
-群体用户首页-群体结构
-该API用于群体用户首页群体结构模块，将返回统计时段内指定群体内活跃用户的各项结构占比
+some description
+some description
 ---
-tags:
-  - 群体结构
+tags: 
+  - some tags
 parameters:
   - name: level
-    description: 群体用户等级
+    description: 
     in: query
     type: string
     required: true
     enum: ['all', 'college', 'major']
     default: all
   - name: id
-    description: 当群体用户不是“全校”时，对应的群体用户id，如院系id
+    description: 
     in: query
     type: integer
   - name: startDate
@@ -35,72 +35,72 @@ responses:
       properties:
         sex:
           type: object
-          description: 各性别占比
+          description: 
           properties:
             sex:
               type: array
-              description: 性别标签
+              description: 
               items:
                 type: string
             n:
               type: array
-              description: 各性别人数
+              description: 
               items:
                 type: integer
         politics:
           type: object
-          description: 各政治面貌占比
+          description: 
           properties:
             politics:
               type: array
-              description: 政治面貌标签
+              description: 
               items:
                 type: string
             n:
               type: array
-              description: 各政治面貌人数
+              description: 
               items:
                 type: integer
         area:
           type: object
-          description: 各生源地（省内/省外）占比
+          description: 
           properties:
             area:
               type: array
-              description: 省内/外标签
+              description: 
               items:
                 type: string
             n:
               type: array
-              description: 省内/外生源人数
+              description: 
               items:
                 type: integer
         nation:
           type: object
-          description: 汉族/少数民族占比
+          description: 
           properties:
             nation:
               type: array
-              description: 汉族/少数民族标签
+              description: 
               items:
                 type: string
             n:
               type: array
-              description: 汉族/少数民族人数
+              description: 
               items:
                 type: integer
     examples:
       sex: 
-        sex: ['男', '女']
+        sex: ['', '']
         n: [50, 50]
       politics:
-        politics: ['中国共产主义青年团团员', '中国共产党党员']
+        politics: ['', '']
         n: [50, 50]
       area:
-        area: ['省内', '省外']
+        area: ['', '']
         n: [50, 50]
       nation:
-        nation: ['汉族', '少数民族']
+        nation: ['', '']
         n: [50, 50]
   500:
     description: 内部计算错误，也可能是入参的问题

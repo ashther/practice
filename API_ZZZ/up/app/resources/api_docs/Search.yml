@@ -1,15 +1,15 @@
-群体用户首页-搜索
-该API用于群体用户在首页搜索个人用户
+some description
+some description
 ---
-tags:
-  - 搜索
+tags: 
+  - some tags
 parameters:
   - name: q
-    description: 搜索条件，支持学号或姓名
+    description: 
     in: query
     type: string
     required: true
-    default: 马文
+    default: 
 responses:
   200:
     description: 正常返回
@@ -18,41 +18,41 @@ responses:
       properties:
         id:
           type: array
-          description: 个人id
+          description: 
           items:
             type: integer
         percode:
           type: array
-          description: 学号
+          description: 
           items:
             type: string
         name:
           type: array
-          description: 姓名
+          description: 
           items:
             type: string
         sex:
           type: array
-          description: 性别
+          description: 
           items:
             type: string
         major:
           type: array
-          description: 专业
+          description: 
           items:
             type: string
         college:
           type: array
-          description: 院系
+          description: 
           items:
             type: string
     examples:
       id: [1]
-      percode: ['001']
-      name: ['张三']
-      sex: ['男']
-      major: ['凝聚态物理']
-      college: ['物理学院']
+      percode: ['']
+      name: ['']
+      sex: ['']
+      major: ['']
+      college: ['']
   500:
     description: 内部计算错误，也可能是入参的问题
     schema:
