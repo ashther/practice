@@ -46,7 +46,6 @@ Temporary Items
 *.Rproj*
 *.data
 *.out
-*.txt
 *.docx
 *.html
 .Rproj.user

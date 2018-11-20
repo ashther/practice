@@ -1,0 +1,12 @@
+flask
+flask_restful
+flask-cors
+flask-httpauth
+flask-sqlalchemy
+flasgger
+passlib
+pandas
+numpy
+pypika
+concurrent_log_handler
+
