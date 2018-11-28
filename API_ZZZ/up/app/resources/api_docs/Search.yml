@@ -10,6 +10,8 @@ parameters:
     type: string
     required: true
     default: 
+security:
+  - basicAuth: []
 responses:
   200:
     description: 正常返回
@@ -47,7 +49,7 @@ responses:
           items:
             type: string
     examples:
-      id: [1]
+      id: []
       percode: ['']
       name: ['']
       sex: ['']

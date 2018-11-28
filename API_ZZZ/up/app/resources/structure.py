@@ -16,8 +16,8 @@ class StructureActive(Resource):
     parser.add_argument('startDate', type=str, location='args', required=True)
     parser.add_argument('endDate', type=str, location='args', required=True)
 
-    @swag_from('api_docs/StructureActive.yml')
     @auth.login_required
+    @swag_from('api_docs/StructureActive.yml')
     def get(self):
         """
         active users structure
@@ -65,9 +65,9 @@ class StructureActive(Resource):
             sql = re.sub('\'(:\w+)\'', '\\1', str(q))
             df = query_db_pd(sql, args)
 
-            df.loc[df.area.notnull() & (df.area != ''), 'area'] = ''
-            df.loc[df.area == '', 'area'] = ''
-            df.loc[df.nation.notnull() & (df.nation != ''), 'nation'] = ''
+            df.loc[df.area.notnull() & (df.area != '甘肃省'), 'area'] = '省外'
+            df.loc[df.area == '甘肃省', 'area'] = '省内'
+            df.loc[df.nation.notnull() & (df.nation != '汉族'), 'nation'] = '少数民族'
 
             items = ['sex', 'politics', 'area', 'nation']
             result = {}
@@ -92,8 +92,8 @@ class StructureAllTime(Resource):
     parser.add_argument('level', type=str, location='args', required=True)
     parser.add_argument('id', type=str, location='args')
 
-    @swag_from('api_docs/StructureAllTime.yml')
     @auth.login_required
+    @swag_from('api_docs/StructureAllTime.yml')
     def get(self):
         """
         all users structure, which are in account table
@@ -138,10 +138,10 @@ class StructureAllTime(Resource):
             df = query_db_pd(sql, args)
 
             df['area_simple'] = df['area']
-            df.loc[df.area_simple.notnull() & (df.area_simple != ''), 'area_simple'] = ''
-            df.loc[df.area_simple == '', 'area_simple'] = ''
+            df.loc[df.area_simple.notnull() & (df.area_simple != '甘肃省'), 'area_simple'] = '省外'
+            df.loc[df.area_simple == '甘肃省', 'area_simple'] = '省内'
             df['nation_simple'] = df['nation']
-            df.loc[df.nation_simple.notnull() & (df.nation_simple != ''), 'nation_simple'] = ''
+            df.loc[df.nation_simple.notnull() & (df.nation_simple != '汉族'), 'nation_simple'] = '少数民族'
 
             result = {}
             for item in df.columns:

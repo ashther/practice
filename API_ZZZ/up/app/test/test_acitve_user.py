@@ -97,7 +97,7 @@ class ActiveLost(unittest.TestCase):
         'pageIndex': 1,
         'pageSize': 5
     }
-    data_col_names = ['percode', 'name', 'last', 'idtype', 'idno', 'sex', 'college', 'major']
+    data_col_names = []
 
     def test_wrong_user(self):
         response = requests.get(URL + self.endpoint, auth=('test', 'admin'))

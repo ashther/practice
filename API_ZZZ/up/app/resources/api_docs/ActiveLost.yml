@@ -27,6 +27,8 @@ parameters:
     type: integer
     required: true
     default: 5
+security:
+  - basicAuth: []
 responses:
   200:
     description: 正常返回
@@ -35,7 +37,7 @@ responses:
       properties:
         total: 
           type: integer
-          description: 
+          description: 总行数
         data: 
           type: object
           description: 
@@ -62,7 +64,7 @@ responses:
                 type: string
             idno:
               type: array
-              description: 
+              description:
               items:
                 type: string
             sex:
@@ -86,7 +88,7 @@ responses:
       last: '2018-04-20 19:44:27'
       idtype: ''
       idno: ''
-      sex: '男'
+      sex: ''
       college: ''
       major: ''
   500:

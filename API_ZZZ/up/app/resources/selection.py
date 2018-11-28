@@ -10,9 +10,8 @@ from authy import auth
 
 class Selection(Resource):
 
-    # @auth.login_required
-    @swag_from('api_docs/Selection.yml')
     @auth.login_required
+    @swag_from('api_docs/Selection.yml')
     def get(self, item):
         """
         all drop-down list option
@@ -57,8 +56,8 @@ class Search(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('q', type=str, location='args', required=True)
 
-    @swag_from('api_docs/Search.yml')
     @auth.login_required
+    @swag_from('api_docs/Search.yml')
     def get(self):
         """
         search bar for looking up specific user

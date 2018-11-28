@@ -33,8 +33,8 @@ class DealCategoryTotal(Resource):
     parser.add_argument('startDate', type=str, location='args', required=True)
     parser.add_argument('endDate', type=str, location='args', required=True)
 
-    @swag_from('api_docs/DealCategoryTotal.yml')
     @auth.login_required
+    @swag_from('api_docs/DealCategoryTotal.yml')
     def get(self):
         """
         total times number for kinds of deal category
@@ -96,8 +96,8 @@ class DealCategoryDaily(Resource):
     parser.add_argument('startDate', type=str, location='args', required=True)
     parser.add_argument('endDate', type=str, location='args', required=True)
 
-    @swag_from('api_docs/DealCategoryDaily.yml')
     @auth.login_required
+    @swag_from('api_docs/DealCategoryDaily.yml')
     def get(self):
         """
         daily times number for kinds of deal category
@@ -201,8 +201,8 @@ class DealCategoryDetail(Resource):
     parser.add_argument('area', type=str, location='args')
     parser.add_argument('yearIn', type=str, location='args')
 
-    @swag_from('api_docs/DealCategoryDetail.yml')
     @auth.login_required
+    @swag_from('api_docs/DealCategoryDetail.yml')
     def get(self):
         """
         daily times number for different user group in kinds of deal category

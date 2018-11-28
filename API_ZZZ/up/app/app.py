@@ -1,6 +1,6 @@
 import os
 from time import strftime
-import logging
+import json
 
 from flask import Flask, g, jsonify, request
 from flask_restful import Api
@@ -27,14 +27,12 @@ api = Api(app)
 swagger = Swagger(app, template=swagger_template)
 db.init_app(app)
 app.logger.addHandler(handler)
-# app.logger.setLevel(logging.ERROR)
 
 
 @app.after_request
 def after_request(response):
     """
-    :param response:
-    :return:
+    log on every response
     """
     ts = strftime('[%Y-%m-%d %H:%M:%S]')
     if response.status_code < 400:
@@ -65,15 +63,15 @@ def redirect_no_auth(response):
     """
     if response.status_code == 401:
         response.status_code = 403
+        # d = response.get_data()
+        # response.data = json.dumps({'message': str(d.decode())})
     return response
 
 
 @app.teardown_appcontext
 def close_connection(exception):
     """
-    关闭连接
-    :param exception:
-    :return:
+    close database connection
     """
     db = getattr(g, '_database', None)
     if db is not None:
@@ -102,8 +100,8 @@ def get_auth_token():
     """
     get token when user log in, and the token will be used as auth in the other API call
     """
-    token = g.user.generate_auth_token(30)
-    return jsonify({'token': token.decode('ascii'), 'duration': 30})
+    token = g.user.generate_auth_token(600)
+    return jsonify({'token': token.decode('ascii'), 'duration': 600})
 
 
 from resources.test import Test

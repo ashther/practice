@@ -3,7 +3,7 @@ from concurrent_log_handler import ConcurrentRotatingFileHandler
 
 
 class Config():
-    DATABASE = 'D:/Documents/R Scripts/db_userProfile/db.sqlite'
+    DATABASE = 'db/db.sqlite'
     SECRET_KEY = 'test secret key'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///db/user.sqlite'
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
@@ -19,7 +19,6 @@ class DevelopmentConfig(Config):
 
 
 class ProductionConfig(Config):
-    DATABASE = 'sqlite:///db/db.sqlite'
     SECRET_KEY = 'a very complicated secret key'
     PORT = 8005
 
@@ -39,4 +38,3 @@ swagger_template = {
 
 handler = ConcurrentRotatingFileHandler('log/flask.log', 'a', maxBytes=10000, backupCount=5, encoding='utf-8')
 handler.setLevel(logging.ERROR)
-# logging.basicConfig(handlers=[RotatingFileHandler('log/flask.log', maxBytes=100000, backupCount=5, encoding='utf-8')])

@@ -3,6 +3,8 @@ some description
 ---
 tags: 
   - some tags
+security:
+  - basicAuth: []
 responses:
   200:
     description: 正常返回

@@ -17,8 +17,8 @@ class DealCountDaily(Resource):
     parser.add_argument('startDate', type=str, location='args', required=True)
     parser.add_argument('endDate', type=str, location='args', required=True)
 
-    @swag_from('api_docs/DealCountDaily.yml')
     @auth.login_required
+    @swag_from('api_docs/DealCountDaily.yml')
     def get(self):
         """
         daily deal times number
@@ -125,8 +125,8 @@ class DealCountDetail(Resource):
     parser.add_argument('area', type=str, location='args')
     parser.add_argument('yearIn', type=str, location='args')
 
-    @swag_from('api_docs/DealCountDetail.yml')
     @auth.login_required
+    @swag_from('api_docs/DealCountDetail.yml')
     def get(self):
         """
         daily deal time number for different user group

@@ -17,8 +17,8 @@ class DealMonDaily(Resource):
     parser.add_argument('startDate', type=str, location='args', required=True)
     parser.add_argument('endDate', type=str, location='args', required=True)
 
-    @swag_from('api_docs/DealMonDaily.yml')
     @auth.login_required
+    @swag_from('api_docs/DealMonDaily.yml')
     def get(self):
         """
         daily deal amount of money
@@ -125,8 +125,8 @@ class DealMonDetail(Resource):
     parser.add_argument('area', type=str, location='args')
     parser.add_argument('yearIn', type=str, location='args')
 
-    @swag_from('api_docs/DealMonDetail.yml')
     @auth.login_required
+    @swag_from('api_docs/DealMonDetail.yml')
     def get(self):
         """
         daily deal amount of money for different user group
@@ -224,8 +224,8 @@ class DealMonTransaction(Resource):
     parser.add_argument('pageIndex', type=int, location='args', required=True)
     parser.add_argument('pageSize', type=int, location='args', required=True)
 
-    @swag_from('api_docs/DealMonTransaction.yml')
     @auth.login_required
+    @swag_from('api_docs/DealMonTransaction.yml')
     def get(self):
         """
         personal daily deal transaction summary

@@ -23,17 +23,19 @@ parameters:
     required: true
     default: '2017-09-07'
   - name: pageIndex
-    description: 分页索引
+    description: 
     in: query
     type: integer
     required: true
     default: 1
   - name: pageSize
-    description: 分页记录数
+    description: 
     in: query
     type: integer
     required: true
     default: 5
+security:
+  - basicAuth: []
 responses:
   200:
     description: 正常返回

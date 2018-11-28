@@ -21,8 +21,8 @@ class Regular(Resource):
     parser.add_argument('area', type=str, location='args')
     parser.add_argument('yearIn', type=int, location='args')
 
-    @swag_from('api_docs/regularGroup.yml')
     @auth.login_required
+    @swag_from('api_docs/regularGroup.yml')
     def get(self):
         """
         user group probability distributions in different regular index interval
@@ -112,8 +112,8 @@ class RegularPerson(Resource):
     parser.add_argument('startDate', type=str, location='args', required=True)
     parser.add_argument('endDate', type=str, location='args', required=True)
 
-    @swag_from('api_docs/regularPerson.yml')
     @auth.login_required
+    @swag_from('api_docs/regularPerson.yml')
     def get(self, item):
         """
         personal daily regular or normal index
