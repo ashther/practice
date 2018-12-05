@@ -275,7 +275,7 @@ function(level, id, thr, top, req, res) {
 
   }, error = function(e) {
     if (e$message == 'Unauthorized Data Query') {
-      res$status <- 403L
+      res$status <- 420L
     } else {
       res$status <- 400L
     }
