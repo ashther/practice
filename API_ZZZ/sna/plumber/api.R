@@ -33,7 +33,7 @@ res_logger <- function(req, res, msg = NULL) {
       res$status,
       name = 'api_upsna'
     )
-    plumber::forward()
+    # plumber::forward()
   } else {
     futile.logger::flog.error(
       '{"uuid":"%s","status":"%s","msg":"%s"}',
@@ -42,7 +42,7 @@ res_logger <- function(req, res, msg = NULL) {
       msg,
       name = 'api_upsna'
     )
-    plumber::forward()
+    # plumber::forward()
   }
 }
 
@@ -60,26 +60,6 @@ college <- readRDS(file.path(HOME_PATH, config$college))
 major <- readRDS(file.path(HOME_PATH, config$major))
 user_major <- readRDS(file.path(HOME_PATH, config$user_major))
 
-# library(RSQLite)
-# con <- dbConnect(SQLite(), file.path(HOME_PATH, config$db_path))
-# college <- dbGetQuery(con, "
-#                       SELECT item_code AS id,
-#                              item_name AS name
-#                       FROM dict
-#                       WHERE type_code = 'college';")
-# major <- dbGetQuery(con, "
-#                       SELECT item_code AS id,
-#                              item_name AS name,
-#                              parent_id  AS college_id
-#                       FROM dict
-#                       WHERE type_code = 'major';")
-# user_major <- dbGetQuery(con, "
-#                          SELECT accnum AS id,
-#                                 name || ' ' || percode AS name,
-#                                 major_id
-#                          FROM account;")
-# dbDisconnect(con)
-
 source(file.path(HOME_PATH, 'function.R'), local = TRUE)
 
 # endpoint and filter ----------------------------------------------------
@@ -87,15 +67,18 @@ source(file.path(HOME_PATH, 'function.R'), local = TRUE)
 #* @filter cors
 cors <- function(res) {
   res$setHeader("Access-Control-Allow-Origin", "*")
+  res$setHeader("Access-Control-Allow-Methods", "PUT, GET, POST, DELETE, OPTIONS")
+  res$setHeader("Access-Control-Allow-Headers", "Origin, Authorization, Accept, Content-Type")
+  res$setHeader("Access-Control-Allow-Credentials", "true")
   plumber::forward()
 }
 
 #* @filter req logger
 function(req) {
 
-  if (req$REQUEST_METHOD == 'GET') {
+  if (req$REQUEST_METHOD %in% c('GET', 'DELETE', 'OPTIONS')) {
     params <- req$QUERY_STRING
-  } else if (req$REQUEST_METHOD == 'POST') {
+  } else if (req$REQUEST_METHOD == c('POST', 'PUT')) {
     params <- req$postBody
   } else {
     params <- NULL
@@ -119,11 +102,103 @@ function(req) {
   plumber::forward()
 }
 
+#* @filter auth
+function(req, res) {
+  if (req$REQUEST_METHOD == 'OPTIONS' | req$PATH_INFO == '/__swagger__/' | 
+      req$PATH_INFO == '/swagger.json') {
+    plumber::forward()
+  } else {
+    tryCatch({
+      
+      auth <- req$HTTP_AUTHORIZATION
+      if (length(auth) == 0) stop('no token')
+      auth <- gsub('^Basic ', '', auth)
+      token <- unlist(strsplit(
+        rawToChar(jose::base64url_decode(auth)), ':', fixed = TRUE
+      ))[1]
+      jose::jwt_decode_hmac(token, config$secret_key)
+      
+      jwt_header <- unlist(strsplit(token, '.', fixed = TRUE))[1]
+      jwt_header <- rawToChar(jose::base64url_decode(jwt_header))
+      
+      exp_time <- jsonlite::fromJSON(jwt_header)$exp
+      exp_time <- as.POSIXct(exp_time, origin = '1970-01-01')
+      
+      if (exp_time >= Sys.time()) {
+        res$status <- 200L
+        plumber::forward()
+      } else {
+        stop('expired token')
+      }
+      
+    }, error = function(e) {
+      res$status <- 403L
+      res_logger(req, res, e$message)
+      'Unauthorized Access'
+    })
+  }
+}
+
+get_group <- function(req) {
+  auth <- gsub('^Basic ', '', req$HTTP_AUTHORIZATION)
+  token <- unlist(strsplit(
+    rawToChar(jose::base64url_decode(auth)), ':', fixed = TRUE
+  ))[1]
+  payload <- jose::jwt_decode_hmac(token, config$secret_key)
+  
+  payload[c('group', 'group_id')]
+}
+
+group_auth_verify <- function(payload, level, id) {
+  group <- payload$group
+  group_id <- payload$group_id
+  
+  if (group == 'all') {
+    invisible()
+  } else if (group == 'college') { # college user query
+    major_id <- major$id[major$college_id == group_id]
+    user_major_id <- user_major$major_id[user_major$id == id]
+    
+    if (level == 'college' & group_id == id) {
+      invisible()
+    } else if (level == 'major' & 
+               ifelse(length(major_id) == 0, FALSE, id %in% major_id)) {
+      invisible()
+    } else if (level == 'ego' & 
+               ifelse(length(major_id) == 0 | length(user_major_id) == 0, 
+                      FALSE, user_major_id %in% major_id)) {
+      invisible()
+    } else {
+      stop('Unauthorized Data Query')
+    }
+  } else if (group == 'major') { # major user query
+    user_major_id <- user_major$major_id[user_major$id == id]
+    
+    if (level == 'major' & group_id == id) {
+      invisible()
+    } else if (level == 'ego' & 
+               ifelse(length(user_major_id) == 0, FALSE, user_major_id == group_id)) {
+      invisible()
+    } else {
+      stop('Unauthorized Data Query')
+    }
+  } else if (group == 'ego') {
+    if (level == 'ego' & group_id == id) {
+      invisible()
+    } else {
+      stop('Unauthorized Data Query')
+    }
+  } else {
+    stop('Unauthorized Data Query')
+  }
+}
+
 #* @apiTitle 
 #* @apiDescription 
 
 
 #* @get /sna/allGraphAttr/<level>
+#* @options /sna/allGraphAttr/<level>
 #* @serializer unboxedJSON
 function(level, req, res) {
   tryCatch({
@@ -152,6 +227,7 @@ function(level, req, res) {
 #* @param thr:numeric 
 #* @param top:int 
 #* @get /sna/graph
+#* @options /sna/graph
 #* @serializer unboxedJSON
 function(level, id, thr, top, req, res) {
   tryCatch({
@@ -161,6 +237,12 @@ function(level, id, thr, top, req, res) {
     if (level != 'all') {
       id <- as.character(id)
       stopifnot(!is.na(id))
+    }
+    # group auth verify
+    if (req$REQUEST_METHOD != 'OPTIONS') {
+      payload <- get_group(req)
+      id <- ifelse(missing(id), '0', id)
+      group_auth_verify(payload, level, id)
     }
 
     if (!missing(thr)) {
@@ -192,42 +274,12 @@ function(level, id, thr, top, req, res) {
     return(result)
 
   }, error = function(e) {
-    res$status <- 400L
-    res_logger(req, res, e$message)
-    list(error = e$message)
-  })
-}
-
-
-#* @get /selection/<level>
-function(level, req, res) {
-  tryCatch({
-    # valid parameters
-    # stopifnot(level %in% c('college', 'major', 'ego'))
-    
-    if (level == 'college') {
-      result <- college
-    } else if (level == 'major') {
-      result <- major[major$id %in% user_major$major_id, c('id', 'name')]
-    } else if (level == 'degree') {
-      result <- c('全部', unique(user_major$degree))
-    } else if (level == 'sex') {
-      result <- c('全部', unique(user_major$sex))
-    } else if (level == 'area') {
-      result <- c('全部', unique(user_major$area))
-    } else if (level == 'yearIn') {
-      result <- c('全部', sort(as.integer(unique(user_major$yearIn)), 
-                             decreasing = TRUE))
+    if (e$message == 'Unauthorized Data Query') {
+      res$status <- 403L
     } else {
-      stop('not correct selection type')
+      res$status <- 400L
     }
-    
-    res_logger(req, res)
-    return(result)
-    
-  }, error = function(e) {
-    res$status <- 400L
     res_logger(req, res, e$message)
-    list(error = e$message)
+    list(message = e$message)
   })
 }

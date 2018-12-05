@@ -53,3 +53,11 @@ services:
       - udas
     restart: always
 
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ../dist:/usr/share/nginx/html
+    ports:
+      - "18081:80"
+    restart: always
+
