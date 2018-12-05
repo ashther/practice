@@ -37,9 +37,9 @@ parameters:
     in: query
     type: string
     required: false
-    enum: ['男', '女']
+    enum: ['', '']
   - name: area
-    description:
+    description: 
     in: query
     type: string
     required: false

@@ -37,7 +37,7 @@ responses:
       properties:
         total: 
           type: integer
-          description: 总行数
+          description: 
         data: 
           type: object
           description: 
@@ -64,12 +64,12 @@ responses:
                 type: string
             idno:
               type: array
-              description:
+              description: 
               items:
                 type: string
             sex:
               type: array
-              description: 
+              description:
               items: 
                 type: string
             college:
@@ -85,7 +85,7 @@ responses:
     examples:
       percode: ''
       name: ''
-      last: '2018-04-20 19:44:27'
+      last: ''
       idtype: ''
       idno: ''
       sex: ''

@@ -23,13 +23,13 @@ parameters:
     required: true
     default: '2017-09-07'
   - name: pageIndex
-    description: 
+    description: 分页索引
     in: query
     type: integer
     required: true
     default: 1
   - name: pageSize
-    description: 
+    description: 分页记录数
     in: query
     type: integer
     required: true

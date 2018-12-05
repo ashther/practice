@@ -8,7 +8,7 @@ parameters:
     description: 
     in: path
     type: string
-    enum: [regular, normal]
+    enum: [, ]
     required: true
     default: regular
   - name: id

@@ -1,5 +1,6 @@
 import logging
 from concurrent_log_handler import ConcurrentRotatingFileHandler
+from flask_restful import HTTPException
 
 
 class Config():
@@ -38,3 +39,39 @@ swagger_template = {
 
 handler = ConcurrentRotatingFileHandler('log/flask.log', 'a', maxBytes=10000, backupCount=5, encoding='utf-8')
 handler.setLevel(logging.ERROR)
+
+
+class UnauthDataQueryError(HTTPException):
+    code = 420
+
+
+class LevelParamError(HTTPException):
+    code = 400
+
+
+class AtLeastOneParamError(HTTPException):
+    code = 400
+
+
+class NoSuchSelectionError(HTTPException):
+    code = 400
+
+
+http_errors = {
+    'UnauthDataQueryError': {
+        'message': 'Unauthorized Data Query',
+        'status': 420
+    },
+    'LevelParamError': {
+        'message': 'not correct level parameter',
+        'status': 400
+    },
+    'AtLeastOneParamError': {
+        'message': 'there must be one parameter applied in business, sex, area and yearIn',
+        'status': 400
+    },
+    'NoSuchSelectionError': {
+        'message': 'no such selection',
+        'status': 400
+    }
+}

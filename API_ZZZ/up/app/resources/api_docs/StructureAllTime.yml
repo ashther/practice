@@ -127,7 +127,7 @@ responses:
                     type: array
                     items:
                       type: integer
-                      description:
+                      description: 
         nation_simple:
           type: object
           description: 

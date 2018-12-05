@@ -2,6 +2,8 @@ from flask import g, current_app as app
 import sqlite3
 import pandas as pd
 
+from config import UnauthDataQueryError
+
 
 def make_dict(cursor, row):
     return dict((cursor.description[idx][0], value) for idx, value in enumerate(row))

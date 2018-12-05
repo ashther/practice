@@ -36,55 +36,67 @@ class ActiveDaily(unittest.TestCase):
         'level': 'all',
         'id': None,
         'startDate': '2017-09-01',
-        'endDate': '2017-09-07'
+        'endDate': '2017-09-07',
+        'business': False,
+        'sex': False,
+        'area': False,
+        'yearIn': False
     }
 
     def test_wrong_user(self):
         response = requests.get(URL + self.endpoint, auth=('test', 'admin'))
         self.assertEqual(response.status_code, 403, 'should be 403')
 
-    def test_response_total(self):
-        response = requests.get(URL + self.endpoint, params=self.args, auth=self.auth)
-        self.assertEqual(response.status_code, 200, 'should be 200')
-        self.assertListEqual(['date', 'n'], list(response.json().keys()), 'should have date and n')
-        self.assertIsInstance(response.json().get('date')[0], str, 'date should be string type')
-        self.assertIsInstance(response.json().get('n')[0], int, 'n should be integer type')
+#    def test_response_total(self):
+#        response = requests.get(URL + self.endpoint, params=self.args, auth=self.auth)
+#        self.assertEqual(response.status_code, 200, 'should be 200')
+#        self.assertListEqual(['date', 'n'], list(response.json().keys()), 'should have date and n')
+#        self.assertIsInstance(response.json().get('date')[0], str, 'date should be string type')
+#        self.assertIsInstance(response.json().get('n')[0], int, 'n should be integer type')
 
     def test_response_business(self):
         args = copy.copy(self.args)
-        args.update({'business': ''})
+        args.update({'business': True})
         response = requests.get(URL + self.endpoint, params=args, auth=self.auth)
         self.assertEqual(response.status_code, 200, 'should be 200')
-        self.assertListEqual(['date', 'n'], list(response.json().keys()), 'should have date and n')
+        self.assertListEqual(['date', 'data'], list(response.json().keys()), 'should have date and data')
         self.assertIsInstance(response.json().get('date')[0], str, 'date should be string type')
-        self.assertIsInstance(response.json().get('n')[0], int, 'n should be integer type')
+        self.assertListEqual(['label', 'value'], list(response.json()['data'][0].keys()))
+        self.assertIsInstance(response.json()['data'][0]['label'], str)
+        self.assertIsInstance(response.json()['data'][0]['value'][0], int)
 
     def test_response_sex(self):
         args = copy.copy(self.args)
-        args.update({'sex': ''})
+        args.update({'sex': True})
         response = requests.get(URL + self.endpoint, params=args, auth=self.auth)
         self.assertEqual(response.status_code, 200, 'should be 200')
-        self.assertListEqual(['date', 'n'], list(response.json().keys()), 'should have date and n')
+        self.assertListEqual(['date', 'data'], list(response.json().keys()), 'should have date and data')
         self.assertIsInstance(response.json().get('date')[0], str, 'date should be string type')
-        self.assertIsInstance(response.json().get('n')[0], int, 'n should be integer type')
+        self.assertListEqual(['label', 'value'], list(response.json()['data'][0].keys()))
+        self.assertIsInstance(response.json()['data'][0]['label'], str)
+        self.assertIsInstance(response.json()['data'][0]['value'][0], int)
 
     def test_response_area(self):
         args = copy.copy(self.args)
-        args.update({'area': ''})
+        args.update({'area': True})
         response = requests.get(URL + self.endpoint, params=args, auth=self.auth)
         self.assertEqual(response.status_code, 200, 'should be 200')
-        self.assertListEqual(['date', 'n'], list(response.json().keys()), 'should have date and n')
+        self.assertListEqual(['date', 'data'], list(response.json().keys()), 'should have date and data')
         self.assertIsInstance(response.json().get('date')[0], str, 'date should be string type')
-        self.assertIsInstance(response.json().get('n')[0], int, 'n should be integer type')
+        self.assertListEqual(['label', 'value'], list(response.json()['data'][0].keys()))
+        self.assertIsInstance(response.json()['data'][0]['label'], str)
+        self.assertIsInstance(response.json()['data'][0]['value'][0], int)
 
     def test_response_yearIn(self):
         args = copy.copy(self.args)
-        args.update({'yearIn': ''})
+        args.update({'yearIn': True})
         response = requests.get(URL + self.endpoint, params=args, auth=self.auth)
         self.assertEqual(response.status_code, 200, 'should be 200')
-        self.assertListEqual(['date', 'n'], list(response.json().keys()), 'should have date and n')
+        self.assertListEqual(['date', 'data'], list(response.json().keys()), 'should have date and data')
         self.assertIsInstance(response.json().get('date')[0], str, 'date should be string type')
-        self.assertIsInstance(response.json().get('n')[0], int, 'n should be integer type')
+        self.assertListEqual(['label', 'value'], list(response.json()['data'][0].keys()))
+        self.assertIsInstance(response.json()['data'][0]['label'], str)
+        self.assertIsInstance(response.json()['data'][0]['value'][0], int)
 
 
 class ActiveLost(unittest.TestCase):
@@ -97,7 +109,7 @@ class ActiveLost(unittest.TestCase):
         'pageIndex': 1,
         'pageSize': 5
     }
-    data_col_names = []
+    data_col_names = ['percode', 'name', 'last', 'idtype', 'idno', 'sex', 'college', 'major']
 
     def test_wrong_user(self):
         response = requests.get(URL + self.endpoint, auth=('test', 'admin'))

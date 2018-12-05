@@ -1,3 +1,5 @@
+import base64
+
 from flask import current_app as app
 from flask_sqlalchemy import SQLAlchemy
 from passlib.apps import custom_app_context as pwd_context
@@ -11,6 +13,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(64))
+    group = db.Column(db.String(32))
+    group_id = db.Column(db.String(32))
 
     def hash_password(self, password):
         """ use this when insert user into user-db manually """
@@ -21,7 +25,7 @@ class User(db.Model):
 
     def generate_auth_token(self, expiration=600):
         s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
-        return s.dumps({'id': self.id})
+        return s.dumps({'id': self.id, 'group': self.group, 'group_id': self.group_id})
 
     @staticmethod
     def verify_auth_token(token):
@@ -34,3 +38,23 @@ class User(db.Model):
             return None    # invalid token
         user = User.query.get(data['id'])
         return user
+
+
+def get_group(authorization):
+    """
+    get user group from token in the request
+    """
+    authorization = authorization.replace('Basic ', '')
+    authorization = base64.b64decode(authorization).decode()
+    token = authorization.split(':')[0]
+
+    user = User.query.filter_by(username=token).first()
+    if user is not None:
+        return user.group, user.group_id
+    else:
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except BadSignature:
+            return None, None
+        return data.get('group', None), data.get('group_id', None)

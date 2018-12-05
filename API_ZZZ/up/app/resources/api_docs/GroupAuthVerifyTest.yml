@@ -2,7 +2,12 @@ test
 test
 ---
 tags:
-  - test
+  - group auth test
+parameters:
+  - name: level
+    in: query
+  - name: id
+    in: query
 security:
   - basicAuth: []
 responses:

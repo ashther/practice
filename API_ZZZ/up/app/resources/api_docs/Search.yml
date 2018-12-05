@@ -49,7 +49,7 @@ responses:
           items:
             type: string
     examples:
-      id: []
+      id: [1]
       percode: ['']
       name: ['']
       sex: ['']

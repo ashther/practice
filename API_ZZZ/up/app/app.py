@@ -1,6 +1,5 @@
 import os
 from time import strftime
-import json
 
 from flask import Flask, g, jsonify, request
 from flask_restful import Api
@@ -23,7 +22,8 @@ app = Flask(__name__)
 CORS(app=app, supports_credentials=True)
 app.config.from_object(DevelopmentConfig)
 
-api = Api(app)
+
+api = Api(app, errors=http_errors)
 swagger = Swagger(app, template=swagger_template)
 db.init_app(app)
 app.logger.addHandler(handler)
@@ -100,12 +100,12 @@ def get_auth_token():
     """
     get token when user log in, and the token will be used as auth in the other API call
     """
-    token = g.user.generate_auth_token(600)
-    return jsonify({'token': token.decode('ascii'), 'duration': 600})
+    token = g.user.generate_auth_token(180)
+    return jsonify({'token': token.decode('ascii'), 'duration': 180})
 
 
-from resources.test import Test
-api.add_resource(Test, '/test', endpoint='test')
+from resources.group_auth_test import GroupAuthVerifyTest
+api.add_resource(GroupAuthVerifyTest, '/group_auth_test')
 
 api.add_resource(Selection, '/selection/<string:item>')
 api.add_resource(Search, '/search')
@@ -133,4 +133,4 @@ api.add_resource(RegularPerson, '/regularPerson/<string:item>')
 if __name__ == '__main__':
     if not os.path.exists('db/user.sqlite'):
         db.create_all()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=app.config['DEBUG'])

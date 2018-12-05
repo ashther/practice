@@ -16,13 +16,13 @@ parameters:
     in: query
     type: integer
   - name: startDate
-    description: 统计时段起始日
+    description: 
     in: query
     type: string
     required: true
     default: '2017-09-01'
   - name: endDate
-    description: 统计时段终止日
+    description: 
     in: query
     type: string
     required: true
@@ -61,7 +61,7 @@ responses:
       properties:
         date:
           type: array
-          description: 日期
+          description: 
           items:
             type: string
         data:
@@ -81,7 +81,7 @@ responses:
                   type: integer
     examples:
       date: ['2017-09-01', '2017-09-02']
-      data: [{label: '', value: [1, 2]}, {label: '', value: [1, 1]}, {label: 'total', value: [2, 3]}]
+      data: [{label: '', value: [1, 2]}, {label: '', value: [1, 1]}, {label: '', value: [2, 3]}]
   500:
     description: 内部计算错误，也可能是入参的问题
     schema:

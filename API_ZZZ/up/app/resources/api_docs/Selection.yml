@@ -30,7 +30,7 @@ responses:
           items:
             type: string
     examples:
-      id: ['', '']
+      id: ['33', '34']
       label: ['', '']
   500:
     description: 内部计算错误，也可能是入参的问题
