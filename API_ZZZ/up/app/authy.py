@@ -62,7 +62,7 @@ def group_auth_verify(group, group_id, level, id):
         elif (level == 'major') and (id in find_major_from_college(group_id)):
             pass
         elif (level == 'ego') and (
-            (find_major_from_account(id) in find_major_from_college(group_id)) or (id is None)
+            (id is None) or (find_major_from_account(id) in find_major_from_college(group_id))
         ):
             pass
         else:
@@ -71,13 +71,19 @@ def group_auth_verify(group, group_id, level, id):
         if (level == 'major') and (group_id == id):
             pass
         elif (level == 'ego') and (
-            (find_major_from_account(id) == group_id) or (id is None)
+            (id is None) or (find_major_from_account(id) == group_id)
         ):
             pass
         else:
             raise UnauthDataQueryError
     elif group == 'ego':
-        if (level == 'ego') and (group_id == id):
+        if level == 'all':
+            pass
+        elif (level == 'college') and (find_major_from_account(group_id) in find_major_from_college(id)):
+            pass
+        elif (level == 'major') and (find_major_from_college(group_id) == id):
+            pass
+        elif (level == 'ego') and (group_id == id):
             pass
         else:
             raise UnauthDataQueryError

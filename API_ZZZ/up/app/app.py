@@ -8,7 +8,7 @@ from flasgger import Swagger, swag_from
 
 from config import *
 from authy import auth
-from models.users import db
+from models.users import db, get_group
 from resources.regular import Regular, RegularPerson
 from resources.active_user import ActiveTotal, ActiveDaily, ActiveLost
 from resources.structure import StructureActive, StructureAllTime
@@ -100,8 +100,11 @@ def get_auth_token():
     """
     get token when user log in, and the token will be used as auth in the other API call
     """
-    token = g.user.generate_auth_token(180)
-    return jsonify({'token': token.decode('ascii'), 'duration': 180})
+    exp_time = app.config['EXP_TIME']
+    token = g.user.generate_auth_token(exp_time)
+
+    group, group_id = get_group(request.headers['Authorization'])
+    return jsonify({'token': token.decode('ascii'), 'duration': exp_time, 'group': group})
 
 
 from resources.group_auth_test import GroupAuthVerifyTest

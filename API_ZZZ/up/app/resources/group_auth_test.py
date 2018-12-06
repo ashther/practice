@@ -22,4 +22,4 @@ class GroupAuthVerifyTest(Resource):
         group, group_id = get_group(authorization)
         group_auth_verify(group, group_id, level, id)
 
-        return 'ok'
+        return authorization

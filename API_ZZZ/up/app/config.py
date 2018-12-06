@@ -13,6 +13,7 @@ class Config():
     DEBUG = False
     HOST = '0.0.0.0'
     PORT = 5000
+    EXP_TIME = 3600
 
 
 class DevelopmentConfig(Config):

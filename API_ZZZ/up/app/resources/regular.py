@@ -41,7 +41,8 @@ class Regular(Resource):
 
         authorization = args.get('Authorization')
         group, group_id = get_group(authorization)
-        group_auth_verify(group, group_id, level, id)
+        if level != 'all':
+            group_auth_verify(group, group_id, level, id)
 
         # define table and query object for query builder
         regular = Table('regular')
