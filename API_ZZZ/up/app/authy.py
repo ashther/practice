@@ -81,7 +81,7 @@ def group_auth_verify(group, group_id, level, id):
             pass
         elif (level == 'college') and (find_major_from_account(group_id) in find_major_from_college(id)):
             pass
-        elif (level == 'major') and (find_major_from_college(group_id) == id):
+        elif (level == 'major') and (find_major_from_account(group_id) == id):
             pass
         elif (level == 'ego') and (group_id == id):
             pass

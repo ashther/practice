@@ -104,7 +104,7 @@ def get_auth_token():
     token = g.user.generate_auth_token(exp_time)
 
     group, group_id = get_group(request.headers['Authorization'])
-    return jsonify({'token': token.decode('ascii'), 'duration': exp_time, 'group': group})
+    return jsonify({'token': token.decode('ascii'), 'duration': exp_time, 'group': group, 'group_id': group_id})
 
 
 from resources.group_auth_test import GroupAuthVerifyTest
@@ -136,4 +136,4 @@ api.add_resource(RegularPerson, '/regularPerson/<string:item>')
 if __name__ == '__main__':
     if not os.path.exists('db/user.sqlite'):
         db.create_all()
-    app.run(host='0.0.0.0', port=5000, debug=app.config['DEBUG'])
+    app.run(host=app.config['HOST'], port=app.config['PORT'], debug=app.config['DEBUG'])
